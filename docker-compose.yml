@@ -1,0 +1,68 @@
+version: '3.8'
+
+volumes:
+  news_db:
+    driver: local
+  news_logs:
+    driver: local
+  news_backups:
+    driver: local
+  news_reports:
+    driver: local
+
+services:
+  news_analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: news-analyzer:latest
+    container_name: news_analyzer
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - news_db:/app/data
+      - news_logs:/app/logs
+      - news_backups:/app/backups
+      - news_reports:/app/reports
+      - ./config:/app/config:ro
+      - ./sources.yaml:/app/sources.yaml:ro
+      - ./.env:/app/.env:ro
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sqlite3; sqlite3.connect('/app/data/news.db')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - news_network
+
+  backup_service:
+    image: news-analyzer:latest
+    container_name: news_backup
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - BACKUP_INTERVAL=3600
+    volumes:
+      - news_db:/app/data:ro
+      - news_backups:/app/backups
+    command: python scripts/auto_backup.py
+    depends_on:
+      news_analyzer:
+        condition: service_healthy
+    networks:
+      - news_network
+
+networks:
+  news_network:
+    driver: bridge

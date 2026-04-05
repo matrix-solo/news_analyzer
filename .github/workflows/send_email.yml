@@ -1,0 +1,51 @@
+# 每日邮件发送
+# 北京时间早上8:30 = UTC 0:30
+name: 每日邮件发送
+
+on:
+  schedule:
+    - cron: '30 0 * * *'  # 北京时间早上8:30（UTC 0:30）
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 下载报告（从报告生成工作流获取）
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          name: daily-report
+          workflow: report.yml
+          path: reports/
+          if_no_artifact_found: warn
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 配置环境变量
+        run: |
+          cp .env.example .env
+          # === 邮件配置（从 Secrets 获取）===
+          echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env
+          echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> .env
+          echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> .env
+          echo "SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}" >> .env
+          echo "EMAIL_TO=${{ secrets.EMAIL_TO }}" >> .env
+
+      - name: 检查报告文件
+        run: |
+          echo "检查 reports 目录..."
+          ls -la reports/ || echo "reports 目录不存在"
+          if [ -d "reports" ]; then
+            find reports -name "*.pdf" -o -name "*.md"
+          fi
+
+      - name: 发送报告邮件
+        run: python send_email.py

@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+检查评分数据结�?"""
+
+import sys
+from pathlib import Path
+
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from core.storage.database import NewsDatabase
+
+def check_score():
+    db = NewsDatabase()
+    
+    # 获取最近的新闻
+    news_list = db.get_recent_news(hours=24)
+    
+    print("=" * 80)
+    print("检查评分数据结�?)
+    print("=" * 80)
+    
+    for news in news_list[:5]:
+        print(f"\n标题: {news.get('title', 'N/A')[:50]}...")
+        print(f"来源: {news.get('source_name', 'N/A')}")
+        print(f"final_score: {news.get('final_score', 'None')}")
+        print(f"score_reason: {news.get('score_reason', 'None')}")
+        # 检查是否有详细评分字段
+        print(f"所有字�? {list(news.keys())}")
+    
+if __name__ == "__main__":
+    check_score()
+

@@ -1,0 +1,104 @@
+version: 1
+
+# 规则优先解析中间层示例配置
+# ------------------------------------------------------------
+# 设计目标：
+# - 按「源 + 频道/领域」粒度，对 5W1H / 内容 / 标签 做可配置抽取
+# - 优先用规则命中；规则缺失或低置信度时，交给 AI 兜底
+# - 该文件作为模板示例，实际运行可复制为 parsing_rules.yaml 并按需修改
+
+defaults:
+  # 通用内容抽取策略
+  content:
+    # 从采集阶段提供的字段中，按优先级选择正文字段
+    prefer_fields: ["content", "description"]
+    strip_html: true
+    min_length: 80
+
+  # 通用领域与标签规则（兜底）
+  domain_rules:
+    - name: "科技默认规则"
+      match:
+        keywords_any: ["人工智能", "AI", "芯片", "半导体", "机器人", "互联网", "5G", "区块链", "自动驾驶"]
+      set:
+        domain: "科技"
+        tags_add: ["科技", "技术创新"]
+
+    - name: "经济默认规则"
+      match:
+        keywords_any: ["股市", "股票", "债券", "央行", "利率", "通胀", "GDP", "经济", "贸易", "投资", "油价", "黄金"]
+      set:
+        domain: "经济"
+        tags_add: ["经济", "宏观"]
+
+    - name: "政治默认规则"
+      match:
+        keywords_any: ["总统", "政府", "内阁", "议会", "选举", "制裁", "联合国", "北约", "外交"]
+      set:
+        domain: "政治"
+        tags_add: ["政治"]
+
+  # 规则置信度阈值：低于该值时，允许 AI 覆盖或补全
+  confidence_threshold:
+    domain: 0.7
+    tags: 0.6
+    w5h1: 0.6
+
+sources:
+  # 示例：路透社（国际通讯社）
+  "路透社":
+    match:
+      source_name: "路透社"
+      type: "international"   # 对应 sources.yaml 中的 type
+      language: "en"
+
+    content:
+      # 对于 Google News / RSSHub 这类转发源，正文通常在 description / content 字段中
+      prefer_fields: ["content", "description"]
+      strip_html: true
+      min_length: 120
+
+    # 源级领域/标签规则
+    rules:
+      - name: "路透-宏观经济"
+        match:
+          rss_category_contains_any: ["Economy", "Markets", "Business"]
+        set:
+          domain: "经济"
+          tags_add: ["国际", "宏观经济"]
+
+      - name: "路透-科技"
+        match:
+          rss_category_contains_any: ["Technology", "Tech"]
+        set:
+          domain: "科技"
+          tags_add: ["国际", "科技"]
+
+  # 示例：中国官媒（汇总配置）
+  "新华社":
+    match:
+      source_name: "新华社"
+      type: "domestic"
+      language: "zh"
+
+    content:
+      prefer_fields: ["content", "description"]
+      strip_html: true
+
+    rules:
+      - name: "新华社-宏观政策"
+        match:
+          keywords_any: ["中央", "国务院", "政策", "部署", "会议"]
+        set:
+          domain: "政治"
+          tags_add: ["宏观政策", "国内"]
+
+      - name: "新华社-科技创新"
+        match:
+          keywords_any: ["科技创新", "关键核心技术", "科研攻关"]
+        set:
+          domain: "科技"
+          tags_add: ["国内", "科技创新"]
+
+  # 其他源未显式配置时，将自动回退到 defaults 中的规则
+

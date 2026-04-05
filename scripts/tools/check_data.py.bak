@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""检查数据库状�?""
+
+import sys
+sys.path.insert(0, 'c:\\Users\\matrix\\Desktop\\news_workflow\\news_analyzer')
+
+from core.storage.database import get_db
+
+def check_data():
+    db = get_db()
+    
+    # 获取最�?8小时的新�?    recent = db.get_recent_news(hours=48)
+    print(f"最�?8小时新闻: {len(recent)}�?)
+    
+    # 统计领域
+    domain_counts = {}
+    unclassified = []
+    
+    for news in recent:
+        domain = news.get('domain')
+        if not domain:
+            unclassified.append(news)
+            domain = '未分�?
+        domain_counts[domain] = domain_counts.get(domain, 0) + 1
+    
+    print("\n领域分布:")
+    for domain, count in sorted(domain_counts.items(), key=lambda x: -x[1]):
+        print(f"  {domain}: {count}�?)
+    
+    print(f"\n未分类新�? {len(unclassified)}�?)
+    
+    # 检查政治、经济、科技
+    print("\n重点检�?")
+    for domain in ['政治', '经济', '科技']:
+        count = domain_counts.get(domain, 0)
+        status = "�? if count > 0 else "�?
+        print(f"{status} {domain}: {count}�?)
+
+if __name__ == "__main__":
+    check_data()
+

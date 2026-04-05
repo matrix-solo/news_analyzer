@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+从损坏的数据库中导出数据并重�?V2
+"""
+
+import sqlite3
+import os
+import shutil
+import re
+from datetime import datetime
+
+def export_and_rebuild_v2():
+    data_dir = r'c:\Users\matrix\Desktop\news_workflow\news_analyzer\data'
+    db_path = os.path.join(data_dir, 'news.db')
+    
+    # 使用只读模式尝试读取
+    try:
+        conn = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
+        print("成功以只读模式连接数据库")
+        
+        # 导出SQL
+        sql_path = os.path.join(data_dir, 'news_export.sql')
+        with open(sql_path, 'w', encoding='utf-8') as f:
+            for line in conn.iterdump():
+                f.write(line + '\n')
+        
+        print(f"SQL导出完成: {sql_path}")
+        conn.close()
+        
+        # 读取SQL并过�?        with open(sql_path, 'r', encoding='utf-8') as f:
+            sql_content = f.read()
+        
+        # 过滤掉FTS和processed_news相关语句
+        # 使用更精确的正则表达�?        filtered_lines = []
+        skip_patterns = [
+            r'CREATE VIRTUAL TABLE',
+            r'CREATE TABLE.*processed_news',
+            r'INSERT INTO.*processed_news',
+            r'INSERT INTO.*news_fts',
+        ]
+        
+        for line in sql_content.split('\n'):
+            should_skip = False
+            for pattern in skip_patterns:
+                if re.search(pattern, line, re.IGNORECASE):
+                    should_skip = True
+                    break
+            if not should_skip:
+                filtered_lines.append(line)
+        
+        filtered_sql = '\n'.join(filtered_lines)
+        
+        # 创建新数据库
+        new_db_path = os.path.join(data_dir, 'news.db.new')
+        new_conn = sqlite3.connect(new_db_path)
+        
+        # 执行过滤后的SQL
+        new_conn.executescript(filtered_sql)
+        new_conn.close()
+        
+        print(f"新数据库创建完成: {new_db_path}")
+        
+        # 备份旧数据库
+        backup_name = f'news.db.corrupt_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        backup_path = os.path.join(data_dir, backup_name)
+        shutil.move(db_path, backup_path)
+        print(f"旧数据库已备�? {backup_path}")
+        
+        # 替换为新数据�?        shutil.move(new_db_path, db_path)
+        print(f"数据库已替换�? {db_path}")
+        
+        # 重新创建FTS表和processed_news�?        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # 创建processed_news�?        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS processed_news (
+                news_id TEXT PRIMARY KEY,
+                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # 创建FTS�?        cursor.execute('''
+            CREATE VIRTUAL TABLE IF NOT EXISTS news_fts USING fts5(
+                title, translated_title, content,
+                content_rowid=rowid
+            )
+        ''')
+        
+        # 填充FTS�?        cursor.execute('''
+            INSERT INTO news_fts(rowid, title, translated_title, content)
+            SELECT rowid, title, translated_title, content FROM news
+        ''')
+        
+        conn.commit()
+        conn.close()
+        print("辅助表重建完�?)
+        
+        # 删除临时SQL文件
+        os.remove(sql_path)
+        
+        print("\n数据库重建成功！")
+        return True
+        
+    except Exception as e:
+        print(f"导出失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+if __name__ == "__main__":
+    export_and_rebuild_v2()
+

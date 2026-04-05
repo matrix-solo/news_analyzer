@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+检查环境变量加�?"""
+
+import sys
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+
+from core.config.loader import get_env
+
+def mask_key(key: str) -> str:
+    """脱敏显示API Key"""
+    if not key:
+        return "(未设�?"
+    if len(key) <= 8:
+        return "****"
+    return f"{key[:4]}...{key[-4:]}"
+
+def check_env():
+    """检查环境变量加�?""
+    print("检查环境变量加�?..")
+    print("-" * 50)
+    
+    keys_to_check = [
+        ("DEEPSEEK_API_KEY", "DeepSeek API"),
+        ("ARK_API_KEY", "豆包 API"),
+        ("DOUBAO_API_KEY", "豆包 API (备用)"),
+        ("QWEN_API_KEY", "通义千问 API"),
+        ("DASHSCOPE_API_KEY", "DashScope API"),
+        ("NEWS_API_KEY", "NewsAPI"),
+    ]
+    
+    for key, name in keys_to_check:
+        value = get_env(key)
+        masked = mask_key(value)
+        status = "�? if value else "�?
+        print(f"{status} {name}: {masked}")
+    
+    print("-" * 50)
+    print("检查完成！")
+
+if __name__ == "__main__":
+    check_env()
+

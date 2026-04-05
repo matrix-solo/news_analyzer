@@ -1,0 +1,123 @@
+# 核心配置文件
+# 合并了 AI 提供者、知识库和热榜配置
+# 版本: 1.0
+
+# ====================== AI 提供者配置 ======================
+ai_providers:
+  providers:
+    doubao:
+      name: "豆包"
+      base_url: "https://ark.cn-beijing.volces.com/api/v3"
+      sdk: "volcengine"
+
+    deepseek:
+      name: "DeepSeek"
+      base_url: "https://api.deepseek.com/v1"
+      sdk: "openai"
+
+    qwen:
+      name: "通义千问"
+      base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+      sdk: "openai"
+
+    openrouter:
+      name: "OpenRouter"
+      base_url: "https://openrouter.ai/api/v1"
+      sdk: "openai"
+      extra_headers:
+        HTTP-Referer: "https://github.com/news-analyzer"
+        X-Title: "News Analyzer"
+
+    # ========== 扩展示例 ==========
+    # 如需添加其他厂商，请参考以下格式：
+    #
+    # openai:
+    #   name: "OpenAI"
+    #   base_url: "https://api.openai.com/v1"
+    #   sdk: "openai"
+    #
+    # custom_provider:
+    #   name: "自定义厂商"
+    #   base_url: "https://your-api-endpoint.com/v1"
+    #   sdk: "openai"
+
+# ====================== 知识库配置 ======================
+knowledge:
+  knowledge_base:
+    type: chroma
+    persist_dir: data/knowledge_base/chroma
+    collection_name: news_articles
+    embedding_dimension: 1024
+
+  embedding:
+    provider: local
+    model: BAAI/bge-m3
+    fast_model: all-MiniLM-L6-v2
+    batch_size: 32
+    max_length: 8192
+
+  retrieval:
+    top_k: 10
+    min_score: 0.5
+    time_decay_days: 30
+    max_context_length: 4000
+    enable_hybrid: false
+
+  indexing:
+    strategy: incremental
+    chunk_size: 512
+    chunk_overlap: 50
+    content_max_length: 8000
+
+  cleanup:
+    retention_days: 90
+    schedule: "0 3 * * *"
+
+# ====================== AI 处理配置 ======================
+ai_processing:
+  batch_size: 4
+  max_retry: 1
+  timeout: 30
+
+# ====================== 热榜配置 ======================
+hotboard:
+  api:
+    base_url: "https://uapis.cn/api/v1/misc/hotboard"
+    api_key: "${HOTBOARD_API_KEY}"  # 从环境变量读取
+    timeout: 30
+    retry_count: 3
+    retry_delay: 1
+
+  platforms:
+    - name: weibo
+      display_name: "新浪微博热搜"
+      enabled: true
+      max_items: 50
+      
+    - name: zhihu
+      display_name: "知乎热榜"
+      enabled: true
+      max_items: 50
+      
+    - name: baidu
+      display_name: "百度热搜"
+      enabled: true
+      max_items: 50
+      
+    - name: toutiao
+      display_name: "今日头条热榜"
+      enabled: true
+      max_items: 50
+
+  cache:
+    ttl_hours: 6
+    enabled: true
+
+  scoring:
+    similarity_threshold: 0.85
+    score_rules:
+      0: 0
+      1: [4, 5]
+      2: [7, 8]
+      3: 8
+      4: [9, 10]

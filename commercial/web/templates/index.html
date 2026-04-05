@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insight Hub - 智能信息洞察平台</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/">Insight Hub</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">首页</a>
+            <a href="/subscribe">订阅</a>
+            <a href="/unsubscribe">取消订阅</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero">
+            <h1>智能信息洞察平台</h1>
+            <p class="subtitle">每日精选全球权威新闻，AI深度分析，直达您的邮箱</p>
+        </section>
+
+        <section class="stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total }}</div>
+                <div class="stat-label">订阅用户</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ sources|length }}</div>
+                <div class="stat-label">权威信源</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">AI</div>
+                <div class="stat-label">智能分析</div>
+            </div>
+        </section>
+
+        <section class="features">
+            <h2>核心功能</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📰</div>
+                    <h3>权威信源</h3>
+                    <p>精选新华社、人民日报等8个国内权威媒体，确保信息真实可靠</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI分析</h3>
+                    <p>智能提取新闻要点，生成深度分析报告，助您快速把握核心信息</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📧</div>
+                    <h3>每日推送</h3>
+                    <p>每日定时推送精选新闻报告，支持邮件订阅，信息直达您的邮箱</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>内容合规</h3>
+                    <p>严格的内容审核机制，确保推送内容符合法律法规要求</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="sources">
+            <h2>合作信源</h2>
+            <div class="source-list">
+                {% for source in sources %}
+                <span class="source-tag">{{ source }}</span>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="cta">
+            <h2>立即订阅</h2>
+            <p>免费订阅，每日获取精选新闻分析报告</p>
+            <a href="/subscribe" class="btn btn-primary">开始订阅</a>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Insight Hub. All rights reserved.</p>
+            <p>联系邮箱: contact@insighthub.com</p>
+        </div>
+    </footer>
+</body>
+</html>

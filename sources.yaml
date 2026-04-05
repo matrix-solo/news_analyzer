@@ -1,0 +1,1101 @@
+# 信源管理配置文件 V4.0
+# 优化原则：权威快讯为主，AI深度为辅
+# 分层策略：Tier 1（核心骨架）→ Tier 2（区域支柱）→ Tier 3（专业补充）
+# 采集策略：所有启用的信源每次采集必取
+
+# ============================================================
+# 四维筛选标准（信源评估框架）
+# ============================================================
+# 
+# source_evaluation_criteria:
+#     authority:
+#         description: 权威性 - 媒体是否具备一手采访能力、事实核查机制、行业声誉
+#         threshold: 至少满足2项
+#     content_purity:
+#         description: 内容来源纯净度 - 报道是否主要来自原创/一手采访
+#         threshold: 原创比例≥70%
+#     w5h1_completeness:
+#         description: 5W1H完整性 - 报道是否以事实信息为核心
+#         threshold: 5W1H完整率≥80%
+#     update_stability:
+#         description: 更新稳定性 - 是否持续产出符合标准的新闻
+#         threshold: 更新天数≥20天/月，无效内容≤10%
+
+# ============================================================
+# 国际信源
+# ============================================================
+
+international:
+    # --------------------------------------------------------
+    # 通讯社（Tier 1 核心骨架）
+    # --------------------------------------------------------
+    news_agency:
+        - name: 路透社
+          type: 通讯社
+          region: 英国/全球
+          credibility: 高
+          tier: 1
+          bias: 中立，金融/商业偏向
+          strengths: 快速准确、金融/政治新闻权威
+          method: rss
+          url: https://www.reuters.com/
+          rss_url_official: https://www.reutersagency.com/feed/
+          rss_url_rsshub: https://rsshub.app/reuters/world
+          rss_url_google: https://news.google.com/rss/search?q=site:reuters.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://news.google.com/rss/search?q=site:reuters.com&hl=en-US&gl=US&ceid=US:en
+          rss_url_backup: https://rsshub.app/reuters/world
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 95%
+              update_stability: 30天/日更
+              rating: 5
+          note: 官方源优先，RSSHub/Google News兜底
+        
+        - name: 美联社
+          type: 通讯社
+          region: 美国/全球
+          credibility: 高
+          tier: 1
+          bias: 客观中立，事实核查严格
+          strengths: 历史悠久、基层报道网络扎实
+          method: rss
+          url: https://apnews.com/
+          rss_url_official: https://feeds.ap.org/ap-news
+          rss_url_rsshub: https://rsshub.app/apnews/topics/world-news
+          rss_url_google: https://news.google.com/rss/search?q=site:apnews.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://news.google.com/rss/search?q=site:apnews.com&hl=en-US&gl=US&ceid=US:en
+          rss_url_backup: https://rsshub.app/apnews/topics/world-news
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 95%
+              update_stability: 30天/日更
+              rating: 5
+          note: 官方源优先，RSSHub/Google News兜底
+        
+        - name: 法新社
+          type: 通讯社
+          region: 法国/全球
+          credibility: 高
+          tier: 1
+          bias: 中立，法语区视角
+          strengths: 多语种报道、欧洲/非洲事务覆盖
+          method: rss
+          url: https://www.afp.com/
+          rss_url_official: https://www.afp.com/en/rss/feed
+          rss_url_rsshub: https://rsshub.app/afp/zh
+          rss_url_google: https://news.google.com/rss/search?q=site:afp.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://news.google.com/rss/search?q=site:afp.com&hl=en-US&gl=US&ceid=US:en
+          rss_url_backup: https://rsshub.app/afp/zh
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 95%
+              update_stability: 30天/日更
+              rating: 5
+          note: 官方源优先，RSSHub/Google News兜底
+        
+        - name: 共同社
+          type: 通讯社
+          region: 日本/亚洲
+          credibility: 高
+          tier: 2
+          bias: 中立，日本视角
+          strengths: 日本及亚洲权威快讯
+          method: rss
+          url: https://english.kyodonews.net/
+          rss_url_official: https://english.kyodonews.net/news/feed
+          rss_url_google: https://news.google.com/rss/search?q=site:kyodonews.net&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://english.kyodonews.net/news/feed
+          rss_url_backup: https://news.google.com/rss/search?q=site:kyodonews.net&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 4
+          note: 日本权威通讯社英文版
+        
+        - name: 韩联社
+          type: 通讯社
+          region: 韩国/亚洲
+          credibility: 高
+          tier: 2
+          bias: 中立，韩国视角
+          strengths: 朝鲜半岛权威快讯
+          method: rss
+          url: https://en.yna.co.kr/
+          rss_url_official: https://en.yna.co.kr/feed/
+          rss_url_google: https://news.google.com/rss/search?q=site:yna.co.kr&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://en.yna.co.kr/feed/
+          rss_url_backup: https://news.google.com/rss/search?q=site:yna.co.kr&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 4
+          note: 韩国权威通讯社英文版
+        
+        - name: 安莎社
+          type: 通讯社
+          region: 意大利/南欧
+          credibility: 高
+          tier: 2
+          bias: 中立，意大利视角
+          strengths: 意大利及南欧视角
+          method: rss
+          url: https://www.ansa.it/english/
+          rss_url_official: https://www.ansa.it/english/news/ansa_en_news.rss
+          rss_url_google: https://news.google.com/rss/search?q=site:ansa.it&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.ansa.it/english/news/ansa_en_news.rss
+          rss_url_backup: https://news.google.com/rss/search?q=site:ansa.it&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 85%
+              update_stability: 28天/日更
+              rating: 4
+          note: 意大利权威通讯社英文版
+
+    # --------------------------------------------------------
+    # 综合类（Tier 2 区域支柱）
+    # --------------------------------------------------------
+    comprehensive:
+        - name: BBC News
+          type: 综合类
+          region: 英国/全球
+          credibility: 高
+          tier: 2
+          bias: 相对客观，英国视角
+          strengths: 国际报道全面、调查新闻深入
+          method: rss
+          url: https://www.bbc.com/news
+          rss_url_official: https://feeds.bbci.co.uk/news/world/rss.xml
+          rss_url_rsshub: https://rsshub.app/bbc/world
+          rss_url_google: https://news.google.com/rss/search?q=site:bbc.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://feeds.bbci.co.uk/news/world/rss.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:bbc.com&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 95%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 5
+          note: 官方RSS主源，Google News备份
+        
+        - name: 纽约时报
+          type: 综合类
+          region: 美国/全球
+          credibility: 高
+          tier: 2
+          bias: 新闻客观，评论版自由主义倾向
+          strengths: 深度调查、国际新闻标杆
+          method: rss
+          url: https://www.nytimes.com/
+          rss_url_official: https://rss.nytimes.com/services/xml/rss/nyt/World.xml
+          rss_url_rsshub: https://rsshub.app/nytimes/world
+          rss_url_google: https://news.google.com/rss/search?q=site:nytimes.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://news.google.com/rss/search?q=site:nytimes.com&hl=en-US&gl=US&ceid=US:en
+          rss_url_backup: https://rsshub.app/nytimes/world
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 95%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 5
+          note: 官方源优先，RSSHub/Google News兜底
+        
+        - name: 金融时报
+          type: 综合类（商业侧重）
+          region: 英国/全球
+          credibility: 高
+          tier: 2
+          bias: 支持全球化/自由贸易
+          strengths: 经济分析深度
+          method: rss
+          url: https://www.ft.com/
+          rss_url_official: https://www.ft.com/rss/world
+          rss_url_rsshub: https://rsshub.app/ft/chinese
+          rss_url_google: https://news.google.com/rss/search?q=site:ft.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://news.google.com/rss/search?q=site:ft.com&hl=en-US&gl=US&ceid=US:en
+          rss_url_backup: https://rsshub.app/ft/chinese
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 95%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 5
+          note: 官方源优先，RSSHub/Google News兜底
+        
+        - name: 华尔街日报
+          type: 综合类（财经侧重）
+          region: 美国/全球
+          credibility: 高
+          tier: 2
+          bias: 新闻客观，评论版保守主义
+          strengths: 商业财经新闻质量高
+          method: rss
+          url: https://www.wsj.com/
+          rss_url_official: https://feeds.a.dj.com/rss/RSSWorldNews.xml
+          rss_url_rsshub: https://rsshub.app/wsj/zh
+          rss_url_google: https://news.google.com/rss/search?q=site:wsj.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://news.google.com/rss/search?q=site:wsj.com&hl=en-US&gl=US&ceid=US:en
+          rss_url_backup: https://rsshub.app/wsj/zh
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 95%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 5
+          note: 官方源优先，RSSHub/Google News兜底
+        
+        - name: 卫报
+          type: 综合类
+          region: 英国/全球
+          credibility: 高
+          tier: 2
+          bias: 自由主义倾向
+          strengths: 调查报道、国际新闻
+          method: rss
+          url: https://www.theguardian.com/
+          rss_url_official: https://www.theguardian.com/world/rss
+          rss_url_rsshub: https://rsshub.app/guardian/world
+          rss_url_google: https://news.google.com/rss/search?q=site:theguardian.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.theguardian.com/world/rss
+          rss_url_backup: https://news.google.com/rss/search?q=site:theguardian.com&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: 官方RSS主源
+        
+        - name: 华盛顿邮报
+          type: 综合类
+          region: 美国/全球
+          credibility: 高
+          tier: 2
+          bias: 中立偏自由
+          strengths: 政治报道、调查新闻
+          method: rss
+          url: https://www.washingtonpost.com/
+          rss_url_official: https://feeds.washingtonpost.com/rss/world
+          rss_url_rsshub: https://rsshub.app/washingtonpost/world
+          rss_url_google: https://news.google.com/rss/search?q=site:washingtonpost.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://news.google.com/rss/search?q=site:washingtonpost.com&hl=en-US&gl=US&ceid=US:en
+          rss_url_backup: https://rsshub.app/washingtonpost/world
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: 官方源优先
+        
+        - name: 洛杉矶时报
+          type: 综合类
+          region: 美国/西海岸
+          credibility: 高
+          tier: 2
+          bias: 中立偏自由
+          strengths: 美国西海岸视角
+          method: rss
+          url: https://www.latimes.com/
+          rss_url_official: https://www.latimes.com/world-nation/rss2.0.xml
+          rss_url_google: https://news.google.com/rss/search?q=site:latimes.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.latimes.com/world-nation/rss2.0.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:latimes.com&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 28天/日更
+              rating: 4
+          note: 美国西海岸主流大报
+        
+        - name: 悉尼先驱晨报
+          type: 综合类
+          region: 澳大利亚/亚太
+          credibility: 高
+          tier: 2
+          bias: 中立偏自由
+          strengths: 澳大利亚及亚太视角
+          method: rss
+          url: https://www.smh.com.au/
+          rss_url_official: https://www.smh.com.au/rss/world.xml
+          rss_url_google: https://news.google.com/rss/search?q=site:smh.com.au&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.smh.com.au/rss/world.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:smh.com.au&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 28天/日更
+              rating: 4
+          note: 澳大利亚主流大报
+        
+        - name: 印度时报
+          type: 综合类
+          region: 印度/南亚
+          credibility: 中高
+          tier: 3
+          bias: 印度视角
+          strengths: 印度快讯
+          method: rss
+          url: https://timesofindia.indiatimes.com/
+          rss_url_official: https://timesofindia.indiatimes.com/rssfeedstopstories.cms
+          rss_url_google: https://news.google.com/rss/search?q=site:timesofindia.indiatimes.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://timesofindia.indiatimes.com/rssfeedstopstories.cms
+          rss_url_backup: https://news.google.com/rss/search?q=site:timesofindia.indiatimes.com&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 中高
+              content_purity: 80%
+              w5h1_completeness: 80%
+              update_stability: 30天/日更
+              rating: 3
+          note: 印度主流媒体
+
+    # --------------------------------------------------------
+    # 区域性（Tier 2 区域支柱）
+    # --------------------------------------------------------
+    regional:
+        - name: 半岛电视台
+          type: 区域性
+          region: 卡塔尔/中东
+          credibility: 中高
+          tier: 2
+          bias: 非西方视角
+          strengths: 中东事务权威
+          method: rss
+          url: https://www.aljazeera.com/
+          rss_url_official: https://www.aljazeera.com/xml/rss/all.xml
+          rss_url_rsshub: https://rsshub.app/aljazeera
+          rss_url_google: https://news.google.com/rss/search?q=site:aljazeera.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.aljazeera.com/xml/rss/all.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:aljazeera.com&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 中高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: 官方RSS主源
+    
+        - name: NHK World
+          type: 区域性
+          region: 日本/东亚
+          credibility: 高
+          tier: 2
+          bias: 冷静事实性，日本视角
+          strengths: 东亚事务、技术类报道
+          method: rss
+          url: https://www3.nhk.or.jp/nhkworld/en/
+          rss_url_official: https://www3.nhk.or.jp/nhkworld/en/news/rss.xml
+          rss_url_rsshub: https://rsshub.app/nhk/news
+          rss_url_google: https://news.google.com/rss/search?q=site:nhk.or.jp&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www3.nhk.or.jp/nhkworld/en/news/rss.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:nhk.or.jp&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 95%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 4
+          note: 官方RSS主源
+    
+        - name: 德国之声
+          type: 区域性
+          region: 德国/欧洲
+          credibility: 高
+          tier: 2
+          bias: 欧洲视角，事实核查严格
+          strengths: 多语种、欧洲视角
+          method: rss
+          url: https://www.dw.com/
+          rss_url_official: https://rss.dw.com/xml/rss-chi-all
+          rss_url_rsshub: https://rsshub.app/dw/chinese
+          rss_url_google: https://news.google.com/rss/search?q=site:dw.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://rss.dw.com/xml/rss-chi-all
+          rss_url_backup: https://rss.dw.com/xml/rss-en-all
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 95%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: 官方RSS主源，中文优先
+        
+        - name: 联合早报
+          type: 区域性
+          region: 新加坡/东南亚
+          credibility: 高
+          tier: 2
+          bias: 华文媒体，东南亚视角
+          strengths: 东南亚华人视角、中英文报道
+          method: rss
+          url: https://www.zaobao.com/
+          rss_url_official: https://www.zaobao.com/rss/realtime/world
+          rss_url_rsshub: https://rsshub.app/zaobao/realtime/world
+          rss_url_google: https://news.google.com/rss/search?q=site:zaobao.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://rsshub.app/zaobao/realtime/world
+          rss_url_backup: https://news.google.com/rss/search?q=site:zaobao.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: RSSHub主源，Google News备份
+        
+        - name: 南华早报
+          type: 区域性
+          region: 中国香港/亚洲
+          credibility: 高
+          tier: 2
+          bias: 香港视角，国际视野
+          strengths: 亚洲新闻、中英双语
+          method: rss
+          url: https://www.scmp.com/
+          rss_url_official: https://www.scmp.com/rss/91/feed
+          rss_url_rsshub: https://rsshub.app/scmp/news
+          rss_url_google: https://news.google.com/rss/search?q=site:scmp.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.scmp.com/rss/91/feed
+          rss_url_backup: https://rsshub.app/scmp/news
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: 官方RSS主源
+
+    # --------------------------------------------------------
+    # 财经类（Tier 2）
+    # --------------------------------------------------------
+    finance:
+        - name: CNBC
+          type: 财经类
+          region: 美国/全球
+          credibility: 高
+          tier: 2
+          bias: 商业/投资者视角
+          strengths: 实时财经快讯
+          method: rss
+          url: https://www.cnbc.com/
+          rss_url_official: https://www.cnbc.com/id/100003114/device/rss/rss.html
+          rss_url_google: https://news.google.com/rss/search?q=site:cnbc.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.cnbc.com/id/100003114/device/rss/rss.html
+          rss_url_backup: https://news.google.com/rss/search?q=site:cnbc.com&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: 实时财经快讯
+        
+        - name: 日经亚洲
+          type: 财经类
+          region: 日本/亚洲
+          credibility: 高
+          tier: 2
+          bias: 商业/亚洲视角
+          strengths: 亚洲经济快讯
+          method: rss
+          url: https://asia.nikkei.com/
+          rss_url_official: https://asia.nikkei.com/rss
+          rss_url_google: https://news.google.com/rss/search?q=site:asia.nikkei.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://asia.nikkei.com/rss
+          rss_url_backup: https://news.google.com/rss/search?q=site:asia.nikkei.com&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 95%
+              w5h1_completeness: 85%
+              update_stability: 28天/日更
+              rating: 4
+          note: 亚洲经济快讯
+
+    # --------------------------------------------------------
+    # 科技专业类（Tier 3 专业补充）
+    # --------------------------------------------------------
+    technology:
+        - name: TechCrunch
+          type: 科技专业类
+          region: 美国/全球
+          credibility: 中高
+          tier: 3
+          bias: 创业/科技乐观主义
+          strengths: 科技创业新闻权威
+          method: rss
+          url: https://techcrunch.com/
+          rss_url_official: https://techcrunch.com/feed/
+          rss_url_rsshub: https://rsshub.app/techcrunch/news
+          rss_url_google: https://news.google.com/rss/search?q=site:techcrunch.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://techcrunch.com/feed/
+          rss_url_backup: https://rsshub.app/techcrunch/news
+          enabled: true
+          evaluation:
+              authority: 中高
+              content_purity: 85%
+              w5h1_completeness: 90%
+              update_stability: 25天/日更
+              rating: 4
+          note: 创业领域权威，原创比例高
+        
+        - name: The Verge
+          type: 科技专业类
+          region: 美国/全球
+          credibility: 中高
+          tier: 3
+          bias: 消费科技导向
+          strengths: 科技产品评测、数字文化
+          method: rss
+          url: https://www.theverge.com/
+          rss_url_official: https://www.theverge.com/rss/index.xml
+          rss_url_rsshub: https://rsshub.app/verge
+          rss_url_google: https://news.google.com/rss/search?q=site:theverge.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.theverge.com/rss/index.xml
+          rss_url_backup: https://rsshub.app/verge
+          enabled: true
+          evaluation:
+              authority: 中高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: 消费科技权威，原创比例高
+        
+        - name: Ars Technica
+          type: 科技专业类
+          region: 美国/全球
+          credibility: 高
+          tier: 3
+          bias: 技术深度
+          strengths: 技术深度分析、科技政策
+          method: rss
+          url: https://arstechnica.com/
+          rss_url_official: https://feeds.arstechnica.com/arstechnica/index
+          rss_url_rsshub: https://rsshub.app/ars/index
+          rss_url_google: https://news.google.com/rss/search?q=site:arstechnica.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://feeds.arstechnica.com/arstechnica/index
+          rss_url_backup: https://rsshub.app/ars/index
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 95%
+              w5h1_completeness: 80%
+              update_stability: 28天/日更
+              rating: 4
+          note: 技术深度权威，原创比例极高
+        
+        - name: Wired
+          type: 科技专业类
+          region: 美国/全球
+          credibility: 高
+          tier: 3
+          bias: 科技文化视角
+          strengths: 科技文化深度、创新报道
+          method: rss
+          url: https://www.wired.com/
+          rss_url_official: https://www.wired.com/feed/rss
+          rss_url_rsshub: https://rsshub.app/wired
+          rss_url_google: https://news.google.com/rss/search?q=site:wired.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.wired.com/feed/rss
+          rss_url_backup: https://rsshub.app/wired
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 70%
+              update_stability: 20天/日更
+              rating: 4
+          note: 科技文化权威，符合权威快讯定位
+        
+        - name: ZDNet
+          type: 科技专业类
+          region: 美国/全球
+          credibility: 中高
+          tier: 3
+          bias: 企业科技导向
+          strengths: 企业科技快讯
+          method: rss
+          url: https://www.zdnet.com/
+          rss_url_official: https://www.zdnet.com/news/rss.xml
+          rss_url_google: https://news.google.com/rss/search?q=site:zdnet.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.zdnet.com/news/rss.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:zdnet.com&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 中高
+              content_purity: 80%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: 企业科技快讯
+        
+        - name: CNET
+          type: 科技专业类
+          region: 美国/全球
+          credibility: 中高
+          tier: 3
+          bias: 消费科技导向
+          strengths: 消费科技快讯
+          method: rss
+          url: https://www.cnet.com/
+          rss_url_official: https://www.cnet.com/rss/news/
+          rss_url_google: https://news.google.com/rss/search?q=site:cnet.com&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.cnet.com/rss/news/
+          rss_url_backup: https://news.google.com/rss/search?q=site:cnet.com&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 中高
+              content_purity: 85%
+              w5h1_completeness: 80%
+              update_stability: 30天/日更
+              rating: 3
+          note: 消费科技快讯
+
+    # --------------------------------------------------------
+    # 分析类（已禁用）
+    # --------------------------------------------------------
+    analytical:
+        - name: 经济学人
+          type: 分析类
+          region: 英国/全球
+          credibility: 高
+          tier: null
+          bias: 自由主义、全球化
+          strengths: 精辟分析、全球视野
+          method: newsapi
+          url: https://www.economist.com/
+          rss_url: null
+          rss_url_backup: null
+          enabled: false
+          disabled_reason: 分析类长文，非快讯；摘要过短，5W1H不完整
+          note: 未来如需观点库可启用
+    
+        - name: 彭博社
+          type: 分析类（财经侧重）
+          region: 美国/全球
+          credibility: 高
+          tier: null
+          bias: 中立，专业投资者视角
+          strengths: 实时财经数据
+          method: newsapi
+          url: https://www.bloomberg.com/
+          rss_url: null
+          rss_url_backup: null
+          enabled: false
+          disabled_reason: 部分内容付费受限；分析类为主
+          note: 已由CNBC替代
+
+# ============================================================
+# 国内信源
+# ============================================================
+
+domestic:
+    # --------------------------------------------------------
+    # 中央媒体（Tier 1-2）
+    # --------------------------------------------------------
+    central:
+        - name: 中国新闻网
+          type: 中央媒体
+          region: 中国/全球
+          credibility: 高
+          tier: 2
+          bias: 中国官方立场
+          strengths: 综合新闻报道、国际新闻
+          method: rss
+          url: https://www.chinanews.com.cn/
+          rss_url_official: https://www.chinanews.com.cn/rss/importnews.xml
+          rss_url_google: https://news.google.com/rss/search?q=site:chinanews.com.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://www.chinanews.com.cn/rss/importnews.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:chinanews.com.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 95%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 4
+          note: 官方RSS主源，要闻导读
+
+
+    # --------------------------------------------------------
+    # 市场化专业类（Tier 3）
+    # --------------------------------------------------------
+    market_professional:
+        - name: 澎湃新闻
+          type: 市场化专业类
+          region: 中国
+          credibility: 中高
+          tier: 3
+          bias: 原创新闻为主
+          strengths: 社会动态、时政原创内容丰富
+          method: rss
+          url: https://www.thepaper.cn/
+          rss_url_official: https://rsshub.app/thepaper/featured
+          rss_url_rsshub: https://rsshub.app/thepaper/featured
+          rss_url_google: https://news.google.com/rss/search?q=site:thepaper.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://news.google.com/rss/search?q=site:thepaper.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: https://rsshub.app/thepaper/featured
+          enabled: true
+          evaluation:
+              authority: 中高
+              content_purity: 70%
+              w5h1_completeness: 80%
+              update_stability: 30天/日更
+              rating: 3
+          note: RSSHub源
+    
+        - name: 第一财经
+          type: 市场化专业类
+          region: 中国
+          credibility: 高
+          tier: 3
+          bias: 商业/金融中立
+          strengths: 商业/宏观经济报道高质量
+          method: rss
+          url: https://www.yicai.com/
+          rss_url_official: https://rsshub.app/yicai/brief
+          rss_url_rsshub: https://rsshub.app/yicai/brief
+          rss_url_google: https://news.google.com/rss/search?q=site:yicai.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://news.google.com/rss/search?q=site:yicai.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: https://rsshub.app/yicai/brief
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 85%
+              w5h1_completeness: 80%
+              update_stability: 30天/日更
+              rating: 3
+          note: RSSHub源
+        
+        - name: 财经杂志
+          type: 市场化专业类
+          region: 中国
+          credibility: 高
+          tier: 3
+          bias: 金融/商业专业视角
+          strengths: 宏观经济分析、金融深度报道
+          method: rss
+          url: https://www.caijing.com.cn/
+          rss_url_official: https://rsshub.app/caijing/cover
+          rss_url_rsshub: https://rsshub.app/caijing/cover
+          rss_url_google: https://news.google.com/rss/search?q=site:caijing.com.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://news.google.com/rss/search?q=site:caijing.com.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: https://rsshub.app/caijing/cover
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 80%
+              update_stability: 25天/日更
+              rating: 3
+          note: RSSHub源
+
+    # --------------------------------------------------------
+    # 科技类（Tier 3，部分监控中）
+    # --------------------------------------------------------
+    technology:
+        - name: 36氪
+          type: 科技专业类
+          region: 中国
+          credibility: 中高
+          tier: 3
+          bias: 创业/科技乐观主义
+          strengths: 中国科技创业报道权威
+          method: rss
+          url: https://36kr.com/
+          rss_url_official: https://rsshub.app/36kr/news/latest
+          rss_url_rsshub: https://rsshub.app/36kr/news/latest
+          rss_url_google: https://news.google.com/rss/search?q=site:36kr.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://rsshub.app/36kr/news/latest
+          rss_url_backup: https://news.google.com/rss/search?q=site:36kr.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: true
+          monitor_status: active
+          monitor_reason: 原创比例约60%，部分转载+编译，需观察30天
+          monitor_start_date: 2026-03-12
+          monitor_duration_days: 30
+          evaluation:
+              authority: 中
+              content_purity: 60%
+              w5h1_completeness: 70%
+              update_stability: 30天/日更
+              rating: 3
+          note: 监控期30天，若纯净度持续低则剔除
+        
+        - name: 钛媒体
+          type: 科技财经类
+          region: 中国
+          credibility: 中高
+          tier: 3
+          bias: 科技财经视角
+          strengths: 科技财经快讯
+          method: rss
+          url: https://www.tmtpost.com/
+          rss_url_official: https://www.tmtpost.com/rss
+          rss_url_google: https://news.google.com/rss/search?q=site:tmtpost.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://www.tmtpost.com/rss
+          rss_url_backup: https://news.google.com/rss/search?q=site:tmtpost.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: true
+          monitor_status: active
+          monitor_reason: 原创比例约40%，5W1H完整性约65%，需观察30天
+          monitor_start_date: 2026-03-12
+          monitor_duration_days: 30
+          evaluation:
+              authority: 中
+              content_purity: 40%
+              w5h1_completeness: 65%
+              update_stability: 28天/日更
+              rating: 2
+          note: 监控期30天，若纯净度/5W1H无改善则剔除
+
+    # --------------------------------------------------------
+    # 已禁用信源
+    # --------------------------------------------------------
+    disabled:
+        - name: 虎嗅
+          type: 科技商业类
+          region: 中国
+          credibility: 中
+          tier: null
+          bias: 科技商业视角
+          strengths: 科技商业快讯
+          method: rss
+          url: https://www.huxiu.com/
+          rss_url_official: https://www.huxiu.com/rss/0.xml
+          rss_url_rsshub: https://rsshub.app/huxiu/article
+          rss_url_google: https://news.google.com/rss/search?q=site:huxiu.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://www.huxiu.com/rss/0.xml
+          rss_url_backup: https://rsshub.app/huxiu/article
+          enabled: false
+          disabled_reason: 原创比例<30%，5W1H完整性<70%，不符合信源筛选标准
+          evaluation:
+              authority: 中
+              content_purity: 30%
+              w5h1_completeness: 60%
+              update_stability: 30天/日更
+              rating: 1
+          note: 纯净度和5W1H完整性均不达标，已剔除
+        
+        - name: 新华社
+          type: 中央媒体
+          region: 中国/全球
+          credibility: 高
+          tier: null
+          bias: 中国官方立场
+          strengths: 重大新闻官方首发
+          method: rss
+          url: https://www.xinhuanet.com/
+          rss_url_official: http://www.news.cn/politics/news_politics.xml
+          rss_url_rsshub: https://rsshub.app/xinhua/world
+          rss_url_google: https://news.google.com/rss/search?q=site:xinhuanet.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: http://www.news.cn/politics/news_politics.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:xinhuanet.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: false
+          disabled_reason: RSS无法正常使用，时效性较差
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 95%
+              update_stability: 30天/日更
+              rating: 5
+          note: 官方RSS主源
+        
+        - name: 人民日报
+          type: 中央媒体
+          region: 中国
+          credibility: 高
+          tier: null
+          bias: 中共中央政策/意识形态风向
+          strengths: 解读中国政治的核心纸媒
+          method: rss
+          url: https://www.people.com.cn/
+          rss_url_official: http://www.people.com.cn/rss/politics.xml
+          rss_url_rsshub: https://rsshub.app/people/index
+          rss_url_google: https://news.google.com/rss/search?q=site:people.com.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://news.google.com/rss/search?q=site:people.com.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: http://www.people.com.cn/rss/politics.xml
+          enabled: false
+          disabled_reason: RSS无法正常使用，时效性较差
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 4
+          note: 官方源优先
+        
+        - name: 中国日报
+          type: 中央媒体
+          region: 中国/全球
+          credibility: 高
+          tier: null
+          bias: 中国官方立场，国际传播
+          strengths: 英文报道、国际视角
+          method: rss
+          url: https://www.chinadaily.com.cn/
+          rss_url_official: https://www.chinadaily.com.cn/rss/world_rss.xml
+          rss_url_rsshub: https://rsshub.app/chinadaily/world
+          rss_url_google: https://news.google.com/rss/search?q=site:chinadaily.com.cn&hl=en-US&gl=US&ceid=US:en
+          rss_url: https://www.chinadaily.com.cn/rss/world_rss.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:chinadaily.com.cn&hl=en-US&gl=US&ceid=US:en
+          enabled: false
+          disabled_reason: RSS无法正常使用，时效性较差
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 4
+          note: 官方RSS主源
+        
+        - name: 中央广播电视总台
+          type: 中央媒体
+          region: 中国/全球
+          credibility: 高
+          tier: null
+          bias: 中国官方立场
+          strengths: 视听新闻、CGTN国际视角
+          method: rss
+          url: https://www.cctv.com/
+          rss_url_official: https://news.cctv.com/world/rss.xml
+          rss_url_rsshub: https://rsshub.app/cctv/world
+          rss_url_google: https://news.google.com/rss/search?q=site:cctv.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://news.google.com/rss/search?q=site:cctv.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: https://news.google.com/rss/search?q=site:cntv.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: false
+          disabled_reason: RSS无法正常使用，多为图片、视频，难以提取，时效性较差
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+          note: Google News聚合，需监控
+        
+        - name: 财新传媒
+          type: 市场化专业类
+          region: 中国
+          credibility: 高
+          tier: null
+          bias: 独立编辑风格，财经领域客观
+          strengths: 调查报道深入、财经新闻专业
+          method: rss
+          url: https://www.caixin.com/
+          rss_url_official: https://rsshub.app/caixin/finance
+          rss_url_rsshub: https://rsshub.app/caixin/finance
+          rss_url_google: https://news.google.com/rss/search?q=site:caixin.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://news.google.com/rss/search?q=site:caixin.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: https://rsshub.app/caixin/finance
+          enabled: false
+          disabled_reason: RSS无法正常使用，时效性较差
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 28天/日更
+              rating: 4
+          note: RSSHub源
+        
+        - name: 界面新闻
+          type: 市场化专业类
+          region: 中国
+          credibility: 中高
+          tier: null
+          bias: 商业财经视角
+          strengths: 商业报道、财经新闻
+          method: rss
+          url: https://www.jiemian.com/
+          rss_url_official: https://rsshub.app/jiemian/list
+          rss_url_rsshub: https://rsshub.app/jiemian/list
+          rss_url_google: https://news.google.com/rss/search?q=site:jiemian.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url: https://rsshub.app/jiemian/list
+          rss_url_backup: https://news.google.com/rss/search?q=site:jiemian.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: false
+          disabled_reason: RSS无法正常使用，时效性较差
+          evaluation:
+              authority: 中高
+              content_purity: 75%
+              w5h1_completeness: 80%
+              update_stability: 30天/日更
+              rating: 3
+          note: RSSHub源
+
+# ============================================================
+# 采集策略配置（所有信源每次必取）
+# ============================================================
+
+collection_strategy:
+    description: 所有启用的信源每次采集必取，不设置频率限制
+    frequency: always
+    
+    tier1:
+        description: 核心骨架，权威性最高
+        weight: 9-10
+        sources: [路透社, 美联社, 法新社]
+    
+    tier2:
+        description: 区域支柱，主流大报及区域权威
+        weight: 7-8
+        sources: [BBC News, 纽约时报, 金融时报, 华尔街日报, 卫报, 华盛顿邮报, 半岛电视台, NHK World, 德国之声, 联合早报, 南华早报, 共同社, 韩联社, CNBC, 日经亚洲, 安莎社, 洛杉矶时报, 悉尼先驱晨报]
+    
+    tier3:
+        description: 专业补充，科技、财经、国内市场化媒体
+        weight: 5-6
+        sources: [澎湃新闻, 第一财经, 财经杂志, TechCrunch, The Verge, Ars Technica, 印度时报, ZDNet, CNET, Wired, 钛媒体, 36氪]
+
+# ============================================================
+# 健康监控规则
+# ============================================================
+
+health_monitor_rules:
+    - rule: 连续失败3次
+      trigger: 采集返回非200或解析空内容
+      action: 自动禁用，发邮件通知
+    
+    - rule: 连续成功2次
+      trigger: 从禁用状态恢复
+      action: 自动重新启用
+    
+    - rule: 空内容率>20%
+      trigger: 最近7天统计
+      action: 降级至监控状态，人工复核
+    
+    - rule: 5W1H完整率<30%
+      trigger: AI抽取结果统计
+      action: 人工检查源是否适合快讯定位
+    
+    - rule: 原创比例<70%
+      trigger: 抽样分析结果
+      action: 标记为监控状态，30天后复评
+    
+    - rule: 定期复核
+      trigger: 每季度
+      action: 按四维标准重新评估全部信源

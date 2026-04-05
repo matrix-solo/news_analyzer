@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - Insight Hub</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-admin">
+        <div class="nav-brand">
+            <a href="/">Insight Hub Admin</a>
+        </div>
+        <div class="nav-links">
+            <a href="/?admin=true">返回首页</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="admin-header">
+            <h1>管理后台</h1>
+        </section>
+
+        <section class="stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total }}</div>
+                <div class="stat-label">总订阅用户</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.free }}</div>
+                <div class="stat-label">免费用户</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.premium }}</div>
+                <div class="stat-label">付费用户</div>
+            </div>
+        </section>
+
+        <section class="subscriber-list">
+            <h2>订阅者列表</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>邮箱</th>
+                        <th>订阅类型</th>
+                        <th>订阅时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subscriber in subscribers %}
+                    <tr>
+                        <td>{{ subscriber.email }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'premium' if subscriber.subscription_type == 'premium' else 'free' }}">
+                                {{ '付费' if subscriber.subscription_type == 'premium' else '免费' }}
+                            </span>
+                        </td>
+                        <td>{{ subscriber.created_at[:10] }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline" onclick="upgradeUser('{{ subscriber.email }}')">升级</button>
+                            <button class="btn btn-sm btn-danger" onclick="removeUser('{{ subscriber.email }}')">移除</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <section class="api-section">
+            <h2>API接口</h2>
+            <div class="api-list">
+                <div class="api-item">
+                    <h4>GET /api/stats</h4>
+                    <p>获取订阅统计</p>
+                </div>
+                <div class="api-item">
+                    <h4>POST /api/subscribe</h4>
+                    <p>订阅服务 (body: {"email": "xxx@xxx.com"})</p>
+                </div>
+                <div class="api-item">
+                    <h4>POST /api/unsubscribe</h4>
+                    <p>取消订阅 (body: {"email": "xxx@xxx.com"})</p>
+                </div>
+                <div class="api-item">
+                    <h4>POST /api/check-content</h4>
+                    <p>检测内容合规性 (body: {"title": "...", "content": "..."})</p>
+                </div>
+                <div class="api-item">
+                    <h4>POST /api/check-source</h4>
+                    <p>检测信源 (body: {"source": "新华社"})</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function upgradeUser(email) {
+            if (confirm('确定要升级用户 ' + email + ' 为付费会员吗？')) {
+                fetch('/api/upgrade', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email: email})
+                }).then(r => r.json()).then(data => {
+                    alert(data.message || '操作成功');
+                    location.reload();
+                });
+            }
+        }
+        
+        function removeUser(email) {
+            if (confirm('确定要移除用户 ' + email + ' 吗？')) {
+                fetch('/api/unsubscribe', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email: email})
+                }).then(r => r.json()).then(data => {
+                    alert(data.message || '操作成功');
+                    location.reload();
+                });
+            }
+        }
+    </script>
+</body>
+</html>

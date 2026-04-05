@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+每日统计报告生成�?用途：生成采集、AI分析、报告推送的核心指标统计
+"""
+
+import json
+import logging
+import sqlite3
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Dict, List, Any
+
+logger = logging.getLogger("DailyStats")
+
+
+class DailyStatsGenerator:
+    """每日统计报告生成�?""
+    
+    def __init__(self, db_path: str = None, stats_dir: str = None):
+        """
+        初始化统计生成器
+        
+        Args:
+            db_path: 数据库路�?            stats_dir: 统计报告输出目录
+        """
+        self.db_path = db_path or str(Path(__file__).parent.parent / "data" / "news.db")
+        self.stats_dir = Path(stats_dir or Path(__file__).parent.parent / "data" / "stats")
+        self.stats_dir.mkdir(parents=True, exist_ok=True)
+    
+    def generate(self, date: str = None) -> Dict[str, Any]:
+        """
+        生成指定日期的统计报�?        
+        Args:
+            date: 日期字符串（YYYY-MM-DD），默认今天
+        
+        Returns:
+            统计数据字典
+        """
+        if not date:
+            date = datetime.now().strftime("%Y-%m-%d")
+        
+        stats = {
+            "date": date,
+            "generated_at": datetime.now().isoformat(),
+            "collection": self._get_collection_stats(date),
+            "ai_analysis": self._get_ai_analysis_stats(date),
+            "database": self._get_database_stats(),
+            "report": self._get_report_stats(date),
+        }
+        
+        # 保存 JSON 报告
+        json_path = self.stats_dir / f"stats_{date}.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(stats, f, ensure_ascii=False, indent=2)
+        
+        # 生成 Markdown 报告
+        md_path = self.stats_dir / f"stats_{date}.md"
+        self._generate_markdown_report(stats, md_path)
+        
+        logger.info(f"统计报告已生�? {md_path}")
+        
+        return stats
+    
+    def _get_collection_stats(self, date: str) -> Dict[str, Any]:
+        """获取采集统计"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # 当日采集数量
+            cursor.execute("""
+                SELECT COUNT(*) FROM news 
+                WHERE DATE(created_at) = ?
+            """, (date,))
+            total_collected = cursor.fetchone()[0]
+            
+            # 按来源统�?            cursor.execute("""
+                SELECT source_name, COUNT(*) as count
+                FROM news 
+                WHERE DATE(created_at) = ?
+                GROUP BY source_name
+                ORDER BY count DESC
+            """, (date,))
+            by_source = dict(cursor.fetchall())
+            
+            # 按领域统�?            cursor.execute("""
+                SELECT domain, COUNT(*) as count
+                FROM news 
+                WHERE DATE(created_at) = ? AND domain IS NOT NULL
+                GROUP BY domain
+                ORDER BY count DESC
+            """, (date,))
+            by_domain = dict(cursor.fetchall())
+            
+            return {
+                "total_collected": total_collected,
+                "successful_sources": len([s for s, c in by_source.items() if c > 0]),
+                "failed_sources": 0,  # 需要从日志解析
+                "by_source": by_source,
+                "by_domain": by_domain,
+            }
+    
+    def _get_ai_analysis_stats(self, date: str) -> Dict[str, Any]:
+        """获取 AI 分析统计"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # 当日处理数量
+            cursor.execute("""
+                SELECT COUNT(*) FROM news 
+                WHERE DATE(created_at) = ? AND score IS NOT NULL
+            """, (date,))
+            total_processed = cursor.fetchone()[0]
+            
+            # 通过数量（score >= 60�?            cursor.execute("""
+                SELECT COUNT(*) FROM news 
+                WHERE DATE(created_at) = ? AND score >= 60
+            """, (date,))
+            passed = cursor.fetchone()[0]
+            
+            # 拒绝数量（score < 60�?            cursor.execute("""
+                SELECT COUNT(*) FROM news 
+                WHERE DATE(created_at) = ? AND score IS NOT NULL AND score < 60
+            """, (date,))
+            rejected = cursor.fetchone()[0]
+            
+            # 兜底数量（score = 50�?            cursor.execute("""
+                SELECT COUNT(*) FROM news 
+                WHERE DATE(created_at) = ? AND score = 50
+            """, (date,))
+            fallback = cursor.fetchone()[0]
+            
+            # 平均分数
+            cursor.execute("""
+                SELECT AVG(score) FROM news 
+                WHERE DATE(created_at) = ? AND score IS NOT NULL
+            """, (date,))
+            avg_score = cursor.fetchone()[0] or 0
+            
+            # 成功�?            success_rate = (passed / total_processed * 100) if total_processed > 0 else 0
+            
+            return {
+                "total_processed": total_processed,
+                "passed": passed,
+                "rejected": rejected,
+                "fallback": fallback,
+                "success_rate": round(success_rate, 1),
+                "avg_score": round(avg_score, 1),
+            }
+    
+    def _get_database_stats(self) -> Dict[str, Any]:
+        """获取数据库统�?""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # 总新闻数
+            cursor.execute("SELECT COUNT(*) FROM news")
+            total_news = cursor.fetchone()[0]
+            
+            # 最�?24 小时
+            cursor.execute("""
+                SELECT COUNT(*) FROM news 
+                WHERE created_at > datetime('now', '-24 hours')
+            """)
+            recent_24h = cursor.fetchone()[0]
+            
+            # 最�?7 �?            cursor.execute("""
+                SELECT COUNT(*) FROM news 
+                WHERE created_at > datetime('now', '-7 days')
+            """)
+            recent_7d = cursor.fetchone()[0]
+            
+            # 数据库大�?            db_size = Path(self.db_path).stat().st_size / 1024 / 1024  # MB
+            
+            return {
+                "total_news": total_news,
+                "recent_24h": recent_24h,
+                "recent_7d": recent_7d,
+                "db_size_mb": round(db_size, 2),
+            }
+    
+    def _get_report_stats(self, date: str) -> Dict[str, Any]:
+        """获取报告统计"""
+        reports_dir = Path(__file__).parent.parent / "reports"
+        
+        # 检查当日报告是否存�?        report_files = list(reports_dir.glob(f"daily_report_{date}*.md"))
+        pdf_files = list(reports_dir.glob(f"daily_report_{date}*.pdf"))
+        
+        return {
+            "generated": len(report_files) > 0,
+            "email_sent": False,  # 需要从日志解析
+            "report_files": len(report_files),
+            "pdf_files": len(pdf_files),
+        }
+    
+    def _generate_markdown_report(self, stats: Dict[str, Any], output_path: Path):
+        """生成 Markdown 格式的统计报�?""
+        lines = [
+            f"# 每日统计报告 - {stats['date']}",
+            "",
+            f"生成时间: {stats['generated_at']}",
+            "",
+            "## 📊 采集统计",
+            "",
+            f"- **总采�?*: {stats['collection']['total_collected']} �?,
+            f"- **成功�?*: {stats['collection']['successful_sources']} �?,
+            "",
+            "### 按来源统�?,
+            "",
+        ]
+        
+        for source, count in list(stats['collection']['by_source'].items())[:10]:
+            lines.append(f"- {source}: {count} �?)
+        
+        lines.extend([
+            "",
+            "## 🤖 AI 分析统计",
+            "",
+            f"- **处理�?*: {stats['ai_analysis']['total_processed']} �?,
+            f"- **通过**: {stats['ai_analysis']['passed']} �?({stats['ai_analysis']['success_rate']}%)",
+            f"- **拒绝**: {stats['ai_analysis']['rejected']} �?,
+            f"- **兜底**: {stats['ai_analysis']['fallback']} �?,
+            f"- **平均�?*: {stats['ai_analysis']['avg_score']}",
+            "",
+            "## 💾 数据库统�?,
+            "",
+            f"- **总新�?*: {stats['database']['total_news']} �?,
+            f"- **最�?24h**: {stats['database']['recent_24h']} �?,
+            f"- **最�?7d**: {stats['database']['recent_7d']} �?,
+            f"- **数据库大�?*: {stats['database']['db_size_mb']} MB",
+            "",
+            "## 📧 报告统计",
+            "",
+            f"- **报告生成**: {'�? if stats['report']['generated'] else '�?}",
+            f"- **邮件发�?*: {'�? if stats['report']['email_sent'] else '�?}",
+            "",
+        ])
+        
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+
+
+def main():
+    """主函�?""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="生成每日统计报告")
+    parser.add_argument("--date", help="指定日期（YYYY-MM-DD），默认今天")
+    parser.add_argument("--output", help="输出目录")
+    
+    args = parser.parse_args()
+    
+    generator = DailyStatsGenerator(stats_dir=args.output)
+    stats = generator.generate(date=args.date)
+    
+    print(f"\n📊 统计报告已生�?")
+    print(f"  - 采集: {stats['collection']['total_collected']} �?)
+    print(f"  - AI 通过: {stats['ai_analysis']['passed']} �?({stats['ai_analysis']['success_rate']}%)")
+    print(f"  - 数据�? {stats['database']['total_news']} �?)
+
+
+if __name__ == "__main__":
+    main()
+

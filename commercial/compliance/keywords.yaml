@@ -1,0 +1,65 @@
+# 敏感词库配置（精简版）
+# 用于商业化内容合规过滤
+# 版本: 2.0.0
+# 更新日期: 2026-03-14
+# 说明: 仅保留核心关键词，复杂判断交给AI兜底
+
+sensitive_keywords:
+    violence:
+        description: 暴力恐怖相关
+        level: high
+        action: reject
+        keywords:
+            - 恐怖袭击
+            - 自杀式袭击
+            - 爆炸袭击
+
+    pornography:
+        description: 色情低俗内容
+        level: high
+        action: reject
+        keywords:
+            - 色情网站
+            - 淫秽内容
+            - 卖淫嫖娼
+
+    gambling:
+        description: 赌博相关
+        level: medium
+        action: reject
+        keywords:
+            - 网络赌博
+            - 博彩平台
+
+    fraud:
+        description: 诈骗相关
+        level: medium
+        action: reject
+        keywords:
+            - 资金盘
+            - 传销组织
+
+field_mapping:
+    description: 领域映射规则
+    rules:
+        - original: 政治
+          mapped: 宏观动态
+          description: 政治类新闻映射为宏观动态
+        
+        - original: 政策
+          mapped: 政策解读
+          description: 政策类新闻保持不变
+        
+        - original: 时政
+          mapped: 时事要闻
+          description: 时政类新闻映射为时事要闻
+
+content_guidelines:
+    description: 内容合规指南
+    rules:
+        - 禁止发布危害国家安全的内容
+        - 禁止发布煽动民族仇恨的内容
+        - 禁止发布传播邪教的内容
+        - 禁止发布虚假新闻
+        - 禁止发布侵犯他人隐私的内容
+        - 禁止发布侵犯知识产权的内容

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订阅 - Insight Hub</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/">Insight Hub</a>
+        </div>
+        <div class="nav-links">
+            <a href="/">首页</a>
+            <a href="/subscribe">订阅</a>
+            <a href="/unsubscribe">取消订阅</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="form-section">
+            <h1>订阅新闻报告</h1>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="/subscribe" class="subscribe-form">
+                <div class="form-group">
+                    <label for="email">邮箱地址</label>
+                    <input type="email" id="email" name="email" placeholder="请输入您的邮箱" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">立即订阅</button>
+            </form>
+
+            <div class="subscription-info">
+                <h3>订阅权益</h3>
+                <ul>
+                    <li>✓ 每日精选新闻摘要</li>
+                    <li>✓ AI智能分析报告</li>
+                    <li>✓ 完全免费</li>
+                    <li>✓ 随时可取消订阅</li>
+                </ul>
+            </div>
+
+            <div class="premium-info">
+                <h3>升级付费会员</h3>
+                <p>解锁更多深度分析内容</p>
+                <ul>
+                    <li>✓ 完整深度分析报告</li>
+                    <li>✓ 历史数据回溯查询</li>
+                    <li>✓ 个性化定制推送</li>
+                    <li>✓ 专属客服支持</li>
+                </ul>
+                <div class="payment-links">
+                    <a href="https://afdian.net/a/your_account" class="btn btn-outline" target="_blank">爱发电订阅</a>
+                    <a href="https://mianbaoduo.com/o/your_product" class="btn btn-outline" target="_blank">面包多订阅</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Insight Hub. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

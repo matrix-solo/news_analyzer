@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+数据�?Schema 迁移脚本（幂等安全）
+
+本脚本对现有 data/news.db 做以下变更：
+  1. news 表：补充 source_reliability_score / extraction_method /
+              raw_item_json / access_time 四个新字�?
+  2. 确保 entities / news_entities 两张表已存在（若不存在则建立�?
+
+设计原则�?
+  - 幂等：多次执行不出错、不丢数�?
+  - 安全：ALTER TABLE ADD COLUMN 仅在字段不存在时执行
+  - 备份：迁移前自动备份原始数据�?
+"""
+
+import sqlite3
+import sys
+import shutil
+import logging
+from datetime import datetime
+from pathlib import Path
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+logger = logging.getLogger("migrate_schema")
+
+
+def _get_existing_columns(conn: sqlite3.Connection, table: str):
+    cur = conn.execute(f"PRAGMA table_info({table})")
+    return {row[1] for row in cur.fetchall()}
+
+
+def _add_column_if_missing(conn: sqlite3.Connection, table: str, col: str, col_def: str):
+    existing = _get_existing_columns(conn, table)
+    if col not in existing:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {col_def}")
+        logger.info(f"  + 添加字段: {table}.{col}")
+    else:
+        logger.info(f"  ~ 字段已存在跳�? {table}.{col}")
+
+
+def _ensure_entities_tables(conn: sqlite3.Connection):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS entities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            subtype TEXT,
+            normalized_name TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_entities_name_type ON entities(name, type)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_entities_type_norm ON entities(type, normalized_name)")
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS news_entities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            news_id TEXT NOT NULL,
+            entity_id INTEGER NOT NULL,
+            role TEXT,
+            weight REAL DEFAULT 1.0,
+            extra TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(entity_id) REFERENCES entities(id) ON DELETE CASCADE
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_news_entities_news_id ON news_entities(news_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_news_entities_entity_id ON news_entities(entity_id)")
+    logger.info("  ~ entities / news_entities 表已就绪")
+
+
+def migrate(db_path: Path):
+    if not db_path.exists():
+        logger.warning(f"数据库不存在，跳过迁�? {db_path}")
+        return
+
+    # ---- 迁移前备�?----
+    backup_dir = db_path.parent / "backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = backup_dir / f"news.db.pre_migrate_{ts}"
+    shutil.copy2(db_path, backup_path)
+    logger.info(f"备份完成: {backup_path}")
+
+    # ---- 执行迁移 ----
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+
+        logger.info("--- 迁移 news 表字�?---")
+        _add_column_if_missing(conn, "news", "source_reliability_score", "REAL")
+        _add_column_if_missing(conn, "news", "extraction_method",        "TEXT DEFAULT 'unknown'")
+        _add_column_if_missing(conn, "news", "raw_item_json",            "TEXT")
+        _add_column_if_missing(conn, "news", "access_time",              "DATETIME")
+
+        logger.info("--- 确保知识图谱预留�?---")
+        _ensure_entities_tables(conn)
+
+        conn.commit()
+        logger.info("迁移完成 �?)
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"迁移失败，已回滚: {e}")
+        raise
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    project_root = Path(__file__).parent
+    db_path = project_root / "data" / "news.db"
+
+    if len(sys.argv) > 1:
+        db_path = Path(sys.argv[1])
+
+    logger.info(f"目标数据�? {db_path}")
+    migrate(db_path)
+

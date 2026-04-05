@@ -1,0 +1,178 @@
+# 商业版信源配置
+# 仅保留国内合规信源，符合监管要求
+# 版本: 1.0.0
+
+domestic:
+    central:
+        - name: 新华社
+          type: 中央媒体
+          region: 中国/全球
+          credibility: 高
+          tier: 1
+          bias: 中国官方立场
+          strengths: 重大新闻官方首发
+          method: rss
+          url: https://www.xinhuanet.com/
+          rss_url: http://www.news.cn/politics/news_politics.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:xinhuanet.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 95%
+              update_stability: 30天/日更
+              rating: 5
+        
+        - name: 人民日报
+          type: 中央媒体
+          region: 中国
+          credibility: 高
+          tier: 2
+          bias: 中共中央政策/意识形态风向
+          strengths: 解读中国政治的核心纸媒
+          method: rss
+          url: https://www.people.com.cn/
+          rss_url: https://news.google.com/rss/search?q=site:people.com.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: http://www.people.com.cn/rss/politics.xml
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 4
+        
+        - name: 中国日报
+          type: 中央媒体
+          region: 中国/全球
+          credibility: 高
+          tier: 2
+          bias: 中国官方立场，国际传播
+          strengths: 英文报道、国际视角
+          method: rss
+          url: https://www.chinadaily.com.cn/
+          rss_url: https://www.chinadaily.com.cn/rss/world_rss.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:chinadaily.com.cn&hl=en-US&gl=US&ceid=US:en
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 90%
+              update_stability: 30天/日更
+              rating: 4
+        
+        - name: 中央广播电视总台
+          type: 中央媒体
+          region: 中国/全球
+          credibility: 高
+          tier: 2
+          bias: 中国官方立场
+          strengths: 视听新闻、CGTN国际视角
+          method: rss
+          url: https://www.cctv.com/
+          rss_url: https://news.cctv.com/world/rss.xml
+          rss_url_backup: https://news.google.com/rss/search?q=site:cctv.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 100%
+              w5h1_completeness: 85%
+              update_stability: 30天/日更
+              rating: 4
+
+    market_professional:
+        - name: 财新传媒
+          type: 市场化专业类
+          region: 中国
+          credibility: 高
+          tier: 3
+          bias: 独立编辑风格，财经领域客观
+          strengths: 调查报道深入、财经新闻专业
+          method: rss
+          url: https://www.caixin.com/
+          rss_url: https://news.google.com/rss/search?q=site:caixin.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: https://rsshub.app/caixin/finance
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 85%
+              update_stability: 28天/日更
+              rating: 4
+    
+        - name: 第一财经
+          type: 市场化专业类
+          region: 中国
+          credibility: 高
+          tier: 3
+          bias: 商业/金融中立
+          strengths: 商业/宏观经济报道高质量
+          method: rss
+          url: https://www.yicai.com/
+          rss_url: https://news.google.com/rss/search?q=site:yicai.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: https://rsshub.app/yicai/brief
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 85%
+              w5h1_completeness: 80%
+              update_stability: 30天/日更
+              rating: 3
+        
+        - name: 财经杂志
+          type: 市场化专业类
+          region: 中国
+          credibility: 高
+          tier: 3
+          bias: 金融/商业专业视角
+          strengths: 宏观经济分析、金融深度报道
+          method: rss
+          url: https://www.caijing.com.cn/
+          rss_url: https://news.google.com/rss/search?q=site:caijing.com.cn&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          rss_url_backup: https://rsshub.app/caijing/cover
+          enabled: true
+          evaluation:
+              authority: 高
+              content_purity: 90%
+              w5h1_completeness: 80%
+              update_stability: 25天/日更
+              rating: 3
+
+    technology:
+        - name: 36氪
+          type: 科技专业类
+          region: 中国
+          credibility: 中高
+          tier: 3
+          bias: 创业/科技乐观主义
+          strengths: 中国科技创业报道权威
+          method: rss
+          url: https://36kr.com/
+          rss_url: https://rsshub.app/36kr/news/latest
+          rss_url_backup: https://news.google.com/rss/search?q=site:36kr.com&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+          enabled: true
+          evaluation:
+              authority: 中
+              content_purity: 60%
+              w5h1_completeness: 70%
+              update_stability: 30天/日更
+              rating: 3
+
+collection_strategy:
+    description: 商业版仅采集国内合规信源
+    frequency: always
+    
+    tier1:
+        description: 中央媒体，权威性最高
+        weight: 10
+        sources: [新华社, 人民日报, 中国日报, 中央广播电视总台]
+    
+    tier2:
+        description: 市场化专业媒体
+        weight: 7
+        sources: [财新传媒, 第一财经, 财经杂志]
+    
+    tier3:
+        description: 科技类媒体
+        weight: 5
+        sources: [36氪]

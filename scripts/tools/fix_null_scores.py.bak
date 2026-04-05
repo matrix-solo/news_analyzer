@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+修复评分为NULL的新�?"""
+
+import sys
+import logging
+from pathlib import Path
+
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from core.storage.database import get_db
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger("FixNullScores")
+
+
+def fix_null_scores():
+    """修复评分为NULL的新�?""
+    db = get_db()
+    
+    with db.get_connection() as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, title, score_timeliness, score_importance, score_credibility, score_impact 
+            FROM news 
+            WHERE score IS NULL OR score = 0
+        ''')
+        null_news = cursor.fetchall()
+        
+        if not null_news:
+            logger.info("没有发现评分为NULL的新�?)
+            return 0
+        
+        logger.info(f"发现 {len(null_news)} 条评分为NULL的新�?)
+        
+        fixed_count = 0
+        for news in null_news:
+            news_id = news[0]
+            title = news[1]
+            score_timeliness = news[2] or 0
+            score_importance = news[3] or 0
+            score_credibility = news[4] or 0
+            score_impact = news[5] or 0
+            
+            final_score = (
+                score_timeliness * 0.25 +
+                score_importance * 0.25 +
+                score_credibility * 0.25 +
+                score_impact * 0.25
+            )
+            
+            cursor.execute('''
+                UPDATE news 
+                SET score = ? 
+                WHERE id = ?
+            ''', (final_score, news_id))
+            
+            logger.info(f"修复: {title[:30]}... -> 评分: {final_score:.1f}")
+            fixed_count += 1
+        
+        conn.commit()
+        
+        logger.info(f"共修�?{fixed_count} 条新闻的评分")
+        return fixed_count
+
+
+if __name__ == "__main__":
+    sys.exit(fix_null_scores())
+

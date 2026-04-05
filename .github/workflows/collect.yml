@@ -1,0 +1,110 @@
+# 新闻采集（每天2次补充）+ 早上采集+报告
+# 北京时间：早7点（采集+报告）、下午3点、晚11点
+name: 新闻采集
+
+on:
+  schedule:
+    - cron: '0 23 * * *'   # 北京时间早7点（UTC 23:00前一天）- 采集+报告
+    - cron: '0 7 * * *'    # 北京时间下午3点（UTC 7:00）- 补充采集
+    - cron: '0 15 * * *'   # 北京时间晚11点（UTC 15:00）- 补充采集
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  # 早7点：采集 + 生成报告（主任务）
+  collect-and-report:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.event.schedule == '0 23 * * *'
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 恢复数据缓存
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: news-analyzer-data-${{ hashFiles('requirements.txt') }}
+          restore-keys: news-analyzer-data-
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 配置环境变量
+        run: |
+          cp .env.example .env
+          # === API 密钥（从 Secrets 获取）===
+          echo "ARK_API_KEY=${{ secrets.ARK_API_KEY }}" >> .env
+          echo "DOUBAO_API_KEY=${{ secrets.ARK_API_KEY }}" >> .env
+          echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
+          echo "QWEN_API_KEY=${{ secrets.QWEN_API_KEY }}" >> .env
+          echo "DASHSCOPE_API_KEY=${{ secrets.DASHSCOPE_API_KEY }}" >> .env
+          # === API 地址 ===
+          echo "DOUBAO_API_BASE=https://ark.cn-beijing.volces.com/api/v3" >> .env
+          echo "DOUBAO_MODEL=doubao-seed-2-0-lite-260215" >> .env
+          echo "DEEPSEEK_API_BASE=https://api.deepseek.com/v1" >> .env
+          echo "QWEN_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1" >> .env
+          # === 邮件配置 ===
+          echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env
+          echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> .env
+          echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> .env
+          echo "SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}" >> .env
+          echo "EMAIL_TO=${{ secrets.EMAIL_TO }}" >> .env
+
+      - name: 执行新闻采集
+        run: python task1_collector.py
+
+      - name: 生成报告并发送邮件
+        run: python task2_reporter.py
+
+      - name: 上传报告
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: daily-report
+          path: reports/
+          retention-days: 1
+
+  # 下午3点、晚11点：补充采集
+  collect:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && (github.event.schedule == '0 7 * * *' || github.event.schedule == '0 15 * * *')
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 恢复数据缓存
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: news-analyzer-data-${{ hashFiles('requirements.txt') }}
+          restore-keys: news-analyzer-data-
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 配置环境变量
+        run: |
+          cp .env.example .env
+          # === API 密钥（从 Secrets 获取）===
+          echo "ARK_API_KEY=${{ secrets.ARK_API_KEY }}" >> .env
+          echo "DOUBAO_API_KEY=${{ secrets.ARK_API_KEY }}" >> .env
+          echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
+          echo "QWEN_API_KEY=${{ secrets.QWEN_API_KEY }}" >> .env
+          echo "DASHSCOPE_API_KEY=${{ secrets.DASHSCOPE_API_KEY }}" >> .env
+          # === API 地址 ===
+          echo "DOUBAO_API_BASE=https://ark.cn-beijing.volces.com/api/v3" >> .env
+          echo "DOUBAO_MODEL=doubao-seed-2-0-lite-260215" >> .env
+          echo "DEEPSEEK_API_BASE=https://api.deepseek.com/v1" >> .env
+          echo "QWEN_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1" >> .env
+
+      - name: 执行新闻采集
+        run: python task1_collector.py

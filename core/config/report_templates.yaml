@@ -1,0 +1,178 @@
+active_template: default
+domain_display_names:
+  政治: 公共事务
+  经济: 经济
+  科技: 科技
+  其他: 其他
+templates:
+  default:
+    brief_report:
+      enabled: true
+      max_items: 10
+      show_link: true
+      show_score: true
+      show_source: true
+      show_summary: true
+      title: 简要摘要报告
+    chart_format: both
+    depth_report:
+      enabled: true
+      max_items: 5
+      show_history: true
+      show_insight: true
+      show_anomaly: true
+      show_cross_domain: true
+      show_investment: false
+      title: 深度分析报告
+    description: 默认报告模板
+    domain_overview:
+      enabled: true
+      show_score: true
+      show_source: true
+      title: 领域总览
+    domains:
+    - 政治
+    - 经济
+    - 科技
+    enabled: true
+    event_detail:
+      enabled: true
+      show_history: true
+      show_insight: true
+      show_investment: false
+      title: 事件详情
+    generate_charts: true
+    generate_pdf: true
+    high_score_threshold: 80.0
+    history_analysis:
+      enabled: true
+      max_items: 5
+      title: 历史关联分析
+      min_similarity: 0.15
+      min_display: 3
+    history_relation:
+      min_similarity: 0.53
+      max_display: 5
+      engine: bge-m3
+      weights:
+        semantic: 0.7
+        time: 0.2
+        entity: 0.1
+    investment_analysis:
+      enabled: false
+      title: 投资分析
+    name: default
+    report_options:
+      hot_events_threshold: 75.0
+      include_30day_trend: true
+      include_radar_chart: false
+      include_score_table: true
+      include_sources_list: true
+      include_timeline_chart: false
+      max_summary_length: 100
+      score_detail_level: detailed
+      timeline_format: list
+      trend_days: 30
+    style:
+      date_format: '%Y-%m-%d'
+      heading2_format: '## {title}'
+      heading3_format: '### {title}'
+      include_emoji: true
+      include_toc: false
+      max_summary_length: 300
+      max_title_length: 50
+      title_format: '# {title}'
+  detailed:
+    brief_report:
+      enabled: true
+      max_items: 15
+      show_link: true
+      show_score: true
+      show_source: true
+      show_summary: true
+      show_tags: true
+      title: 简要摘要报告
+    chart_format: both
+    depth_report:
+      enabled: true
+      max_items: 10
+      show_history: true
+      show_insight: true
+      show_investment: true
+      title: 深度分析报告
+    description: 详细报告模板
+    domain_overview:
+      enabled: true
+      show_score: true
+      show_source: true
+      title: 领域总览
+    domains:
+    - 政治
+    - 经济
+    - 科技
+    - 其他
+    enabled: true
+    event_detail:
+      enabled: true
+      show_history: true
+      show_insight: true
+      show_investment: true
+      title: 事件详情
+    generate_charts: true
+    generate_pdf: true
+    high_score_threshold: 75.0
+    history_analysis:
+      enabled: true
+      max_items: 10
+      title: 历史关联分析
+    investment_analysis:
+      enabled: true
+      title: 投资分析
+    name: detailed
+    style:
+      include_emoji: true
+      include_toc: true
+      max_summary_length: 500
+      max_title_length: 100
+  minimal:
+    brief_report:
+      enabled: true
+      max_items: 5
+      show_link: false
+      show_score: true
+      show_source: true
+      show_summary: true
+      show_tags: false
+      title: 简要摘要
+    chart_format: html
+    depth_report:
+      enabled: false
+    description: 精简报告模板
+    domain_overview:
+      enabled: true
+      show_score: true
+      title: 领域概览
+    domains:
+    - 政治
+    - 经济
+    - 科技
+    enabled: true
+    event_detail:
+      enabled: true
+      show_history: false
+      show_insight: false
+      show_investment: false
+      title: 事件
+    generate_charts: false
+    generate_pdf: false
+    high_score_threshold: 80.0
+    history_analysis:
+      enabled: false
+    investment_analysis:
+      enabled: false
+    name: minimal
+    style:
+      include_emoji: false
+      include_toc: false
+      max_summary_length: 150
+      max_title_length: 30

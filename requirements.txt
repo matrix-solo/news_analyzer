@@ -1,0 +1,37 @@
+# 新闻分析工作流 - 核心依赖
+# Python 3.9+ 推荐
+
+# 配置与环境
+python-dotenv>=1.0.0
+PyYAML>=6.0
+
+# HTTP 请求
+requests>=2.28.0
+httpx>=0.24.0
+
+# AI 模型（DeepSeek / Qwen 等 OpenAI 兼容接口）
+openai>=1.0.0
+
+# 豆包 API（火山引擎）- 优先级最高
+volcengine-python-sdk>=1.0.0
+
+# 网页解析（爬虫备用）
+beautifulsoup4>=4.12.0
+
+# PDF 生成
+reportlab>=4.0.0
+
+# 图表生成
+plotly>=5.0.0
+kaleido>=0.2.0
+
+# 知识库（向量数据库 + Embedding）
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+tiktoken>=0.5.0
+
+# 向量索引（BGE-M3历史关联引擎）
+faiss-cpu>=1.7.0
+
+# 可选：阿里云 DashScope（通义千问）
+# dashscope>=1.14.0
