@@ -43,16 +43,16 @@ jobs:
       - name: 配置环境变量
         run: |
           cp .env.example .env
-          # === 深度分析模型（DeepSeek）===
-          echo "AI_ANALYSIS_PROVIDER=deepseek" >> .env
-          echo "AI_ANALYSIS_MODEL=deepseek-reasoner" >> .env
-          echo "AI_ANALYSIS_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
-          echo "AI_ANALYSIS_BASE_URL=https://api.deepseek.com/v1" >> .env
-          # === 快速筛选模型（豆包）===
-          echo "AI_FILTER_PROVIDER=doubao" >> .env
-          echo "AI_FILTER_MODEL=doubao-seed-2-0-mini-260215" >> .env
-          echo "AI_FILTER_KEY=${{ secrets.ARK_API_KEY }}" >> .env
-          echo "AI_FILTER_BASE_URL=https://ark.cn-beijing.volces.com/api/v3" >> .env
+          # === 深度分析模型 ===
+          echo "AI_ANALYSIS_PROVIDER=${{ secrets.AI_ANALYSIS_PROVIDER }}" >> .env
+          echo "AI_ANALYSIS_MODEL=${{ secrets.AI_ANALYSIS_MODEL }}" >> .env
+          echo "AI_ANALYSIS_KEY=${{ secrets.AI_ANALYSIS_KEY }}" >> .env
+          echo "AI_ANALYSIS_BASE_URL=${{ secrets.AI_ANALYSIS_BASE_URL }}" >> .env
+          # === 快速筛选模型 ===
+          echo "AI_FILTER_PROVIDER=${{ secrets.AI_FILTER_PROVIDER }}" >> .env
+          echo "AI_FILTER_MODEL=${{ secrets.AI_FILTER_MODEL }}" >> .env
+          echo "AI_FILTER_KEY=${{ secrets.AI_FILTER_KEY }}" >> .env
+          echo "AI_FILTER_BASE_URL=${{ secrets.AI_FILTER_BASE_URL }}" >> .env
           # === 邮件配置 ===
           echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env
           echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> .env
@@ -100,16 +100,16 @@ jobs:
       - name: 配置环境变量
         run: |
           cp .env.example .env
-          # === 深度分析模型（DeepSeek）===
-          echo "AI_ANALYSIS_PROVIDER=deepseek" >> .env
-          echo "AI_ANALYSIS_MODEL=deepseek-reasoner" >> .env
-          echo "AI_ANALYSIS_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
-          echo "AI_ANALYSIS_BASE_URL=https://api.deepseek.com/v1" >> .env
-          # === 快速筛选模型（豆包）===
-          echo "AI_FILTER_PROVIDER=doubao" >> .env
-          echo "AI_FILTER_MODEL=doubao-seed-2-0-mini-260215" >> .env
-          echo "AI_FILTER_KEY=${{ secrets.ARK_API_KEY }}" >> .env
-          echo "AI_FILTER_BASE_URL=https://ark.cn-beijing.volces.com/api/v3" >> .env
+          # === 深度分析模型 ===
+          echo "AI_ANALYSIS_PROVIDER=${{ secrets.AI_ANALYSIS_PROVIDER }}" >> .env
+          echo "AI_ANALYSIS_MODEL=${{ secrets.AI_ANALYSIS_MODEL }}" >> .env
+          echo "AI_ANALYSIS_KEY=${{ secrets.AI_ANALYSIS_KEY }}" >> .env
+          echo "AI_ANALYSIS_BASE_URL=${{ secrets.AI_ANALYSIS_BASE_URL }}" >> .env
+          # === 快速筛选模型 ===
+          echo "AI_FILTER_PROVIDER=${{ secrets.AI_FILTER_PROVIDER }}" >> .env
+          echo "AI_FILTER_MODEL=${{ secrets.AI_FILTER_MODEL }}" >> .env
+          echo "AI_FILTER_KEY=${{ secrets.AI_FILTER_KEY }}" >> .env
+          echo "AI_FILTER_BASE_URL=${{ secrets.AI_FILTER_BASE_URL }}" >> .env
 
       - name: 执行新闻采集
         run: python task1_collector.py
