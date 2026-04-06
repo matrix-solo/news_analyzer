@@ -15,6 +15,14 @@ reports/
 *.sqlite
 *.sqlite3
 
+# ==================== 大模型文件（超过GitHub限制） ====================
+models/
+*.safetensors
+*.bin
+*.gguf
+*.pt
+*.pth
+
 # 归档与过滤日志（可能含业务数据）
 analysis_pool/
 archive_pool/

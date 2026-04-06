@@ -79,17 +79,25 @@ def _get_local_model_path():
 
 
 def _get_model(max_retries: int = 2):
-    """惰性加载 BGE-M3；优先从本地加载（不验证），失败则返回None。"""
+    """
+    惰性加载 BGE-M3 模型
+    
+    加载优先级：
+    1. 本地 models/bge-m3/ 目录
+    2. HuggingFace 缓存（~/.cache/huggingface/）
+    3. 从 HuggingFace Hub 自动下载
+    
+    失败时返回 None，使用简单聚类降级
+    """
     global _model
     if _model is not None:
         return _model
+    
     import os
     os.environ.setdefault('HF_ENDPOINT', 'https://hf-mirror.com')
-    os.environ['TRANSFORMERS_OFFLINE'] = '1'
-    os.environ['HF_HUB_OFFLINE'] = '1'
-
+    
     local_path = _get_local_model_path()
-
+    
     if local_path.exists():
         try:
             t0 = time.time()
@@ -99,8 +107,18 @@ def _get_model(max_retries: int = 2):
             logger.info(f"BGE-M3 本地加载完成，耗时 {time.time() - t0:.1f}s")
             return _model
         except Exception as e:
-            logger.warning(f"BGE-M3 本地加载失败: {e}，跳过模型加载")
-
+            logger.warning(f"BGE-M3 本地加载失败: {e}")
+    
+    try:
+        t0 = time.time()
+        logger.info("从 HuggingFace Hub 下载 BGE-M3 模型（首次下载约 2GB）...")
+        from sentence_transformers import SentenceTransformer
+        _model = SentenceTransformer('BAAI/bge-m3', device='cpu')
+        logger.info(f"BGE-M3 下载并加载完成，耗时 {time.time() - t0:.1f}s")
+        return _model
+    except Exception as e:
+        logger.warning(f"BGE-M3 从 HuggingFace 下载失败: {e}")
+    
     logger.info("BGE-M3 模型不可用，将使用简单聚类")
     return None
 
