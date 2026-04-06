@@ -43,17 +43,16 @@ jobs:
       - name: 配置环境变量
         run: |
           cp .env.example .env
-          # === API 密钥（从 Secrets 获取）===
-          echo "ARK_API_KEY=${{ secrets.ARK_API_KEY }}" >> .env
-          echo "DOUBAO_API_KEY=${{ secrets.ARK_API_KEY }}" >> .env
-          echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
-          echo "QWEN_API_KEY=${{ secrets.QWEN_API_KEY }}" >> .env
-          echo "DASHSCOPE_API_KEY=${{ secrets.DASHSCOPE_API_KEY }}" >> .env
-          # === API 地址 ===
-          echo "DOUBAO_API_BASE=https://ark.cn-beijing.volces.com/api/v3" >> .env
-          echo "DOUBAO_MODEL=doubao-seed-2-0-lite-260215" >> .env
-          echo "DEEPSEEK_API_BASE=https://api.deepseek.com/v1" >> .env
-          echo "QWEN_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1" >> .env
+          # === 深度分析模型（DeepSeek）===
+          echo "AI_ANALYSIS_PROVIDER=deepseek" >> .env
+          echo "AI_ANALYSIS_MODEL=deepseek-reasoner" >> .env
+          echo "AI_ANALYSIS_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
+          echo "AI_ANALYSIS_BASE_URL=https://api.deepseek.com/v1" >> .env
+          # === 快速筛选模型（豆包）===
+          echo "AI_FILTER_PROVIDER=doubao" >> .env
+          echo "AI_FILTER_MODEL=doubao-seed-2-0-mini-260215" >> .env
+          echo "AI_FILTER_KEY=${{ secrets.ARK_API_KEY }}" >> .env
+          echo "AI_FILTER_BASE_URL=https://ark.cn-beijing.volces.com/api/v3" >> .env
           # === 邮件配置 ===
           echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env
           echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> .env
@@ -101,17 +100,16 @@ jobs:
       - name: 配置环境变量
         run: |
           cp .env.example .env
-          # === API 密钥（从 Secrets 获取）===
-          echo "ARK_API_KEY=${{ secrets.ARK_API_KEY }}" >> .env
-          echo "DOUBAO_API_KEY=${{ secrets.ARK_API_KEY }}" >> .env
-          echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
-          echo "QWEN_API_KEY=${{ secrets.QWEN_API_KEY }}" >> .env
-          echo "DASHSCOPE_API_KEY=${{ secrets.DASHSCOPE_API_KEY }}" >> .env
-          # === API 地址 ===
-          echo "DOUBAO_API_BASE=https://ark.cn-beijing.volces.com/api/v3" >> .env
-          echo "DOUBAO_MODEL=doubao-seed-2-0-lite-260215" >> .env
-          echo "DEEPSEEK_API_BASE=https://api.deepseek.com/v1" >> .env
-          echo "QWEN_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1" >> .env
+          # === 深度分析模型（DeepSeek）===
+          echo "AI_ANALYSIS_PROVIDER=deepseek" >> .env
+          echo "AI_ANALYSIS_MODEL=deepseek-reasoner" >> .env
+          echo "AI_ANALYSIS_KEY=${{ secrets.DEEPSEEK_API_KEY }}" >> .env
+          echo "AI_ANALYSIS_BASE_URL=https://api.deepseek.com/v1" >> .env
+          # === 快速筛选模型（豆包）===
+          echo "AI_FILTER_PROVIDER=doubao" >> .env
+          echo "AI_FILTER_MODEL=doubao-seed-2-0-mini-260215" >> .env
+          echo "AI_FILTER_KEY=${{ secrets.ARK_API_KEY }}" >> .env
+          echo "AI_FILTER_BASE_URL=https://ark.cn-beijing.volces.com/api/v3" >> .env
 
       - name: 执行新闻采集
         run: python task1_collector.py
