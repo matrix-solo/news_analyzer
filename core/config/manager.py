@@ -239,7 +239,7 @@ class ConfigManager:
 
         # 优先加载合并后的核心配置文件
 
-        config_dir = self.project_root / "config"
+        config_dir = Path(__file__).parent  # core/config/ 目录
 
         core_config_path = config_dir / "core_config.yaml"
 

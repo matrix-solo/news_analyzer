@@ -377,6 +377,7 @@ class NewsDatabase:
             ('accuracy_score', 'REAL'),
             ('original_summary', 'TEXT'),
             ('classification_confidence', 'REAL'),
+            ('embedding', 'BLOB'),
         ]
 
         for col_name, col_type in migrations:

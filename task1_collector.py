@@ -33,6 +33,7 @@ import json
 from pathlib import Path
 
 from datetime import datetime, timedelta
+import numpy as np
 
 from typing import List, Dict, Any, Set, Optional
 
@@ -193,6 +194,10 @@ class Task1NewsCollector:
             'ai_remediation_success': 0,
 
             'ai_remediation_failed': 0,
+
+            # 熔断器统计
+            'circuit_breaker_skipped': 0,
+            'final_failed': 0,
 
         }
 
@@ -411,6 +416,18 @@ class Task1NewsCollector:
 
             for batch_idx in range(0, len(passed_news), batch_size):
 
+                # 熔断器检查：LLM 服务不可用时提前退出
+                if self.combined_processor.is_circuit_open():
+                    skipped = len(passed_news) - batch_idx
+                    logger.critical(
+                        f"熔断器已断开，跳过剩余 {skipped} 条新闻 "
+                        f"(批次 {batch_idx // batch_size + 1}/{total_batches})"
+                    )
+                    # 将跳过的新闻全部视为失败
+                    failed_news.extend(passed_news[batch_idx:])
+                    self.stats['circuit_breaker_skipped'] = skipped
+                    break
+
                 batch = passed_news[batch_idx:batch_idx + batch_size]
 
                 batch_num = batch_idx // batch_size + 1
@@ -477,15 +494,23 @@ class Task1NewsCollector:
 
                 if final_failed:
 
-                    logger.debug(f"跳过 {len(final_failed)} 条无法解析的新闻")
+                    logger.warning(f"⚠️  最终失败 {len(final_failed)} 条新闻（LLM 无法处理）")
+
+                    self.stats['final_failed'] = len(final_failed)
 
                     for news in final_failed:
 
-                        logger.debug(f"  跳过: {news.get('title', '')[:50]}...")
+                        logger.warning(f"  跳过: {news.get('title', '')[:50]}... (来源: {news.get('source_name', '')})")
 
         logger.info(f"三阶段合并处理完成: {len(processed_news)} 条新闻")
 
         logger.info(f"AI处理统计: 批量成功={self.stats['ai_batch_success']}, 批量失败={self.stats['ai_batch_failed']}, 重试成功={self.stats['ai_retry_success']}, 重试失败={self.stats['ai_retry_failed']}")
+
+        if self.stats.get('circuit_breaker_skipped', 0) > 0:
+            logger.warning(f"⚡ 熔断器跳过: {self.stats['circuit_breaker_skipped']} 条新闻（LLM 服务不可用）")
+
+        if self.stats.get('final_failed', 0) > 0:
+            logger.warning(f"❌ 最终失败: {self.stats['final_failed']} 条新闻（LLM 无法处理）")
 
         # ========== 阶段7:数据完整性校验 ==========
         _hb.update("collect", 60, "阶段7:数据完整性校验")
@@ -615,6 +640,19 @@ class Task1NewsCollector:
         logger.info("-" * 50)
         with _timer.stage("修复force_stored数据"):
             self._reprocess_pending_news()
+
+        # ========== 阶段12:清理过期原始数据 ==========
+
+        _hb.update("collect", 97, "阶段12:清理过期原始数据")
+        logger.info("")
+        logger.info("🧹 阶段12:清理过期原始数据")
+        logger.info("-" * 50)
+        with _timer.stage("清理过期原始数据"):
+            cleaned = self.db.cleanup_raw_news(days=7)
+            if cleaned > 0:
+                logger.info(f"清理 {cleaned} 条过期原始数据 (>7天)")
+            else:
+                logger.info("无需清理过期原始数据")
 
         # ========== 任务完成/打印统计 ==========
 

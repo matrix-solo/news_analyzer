@@ -31,7 +31,11 @@ def get_email_config() -> dict:
         "smtp_user": os.getenv("SMTP_USER", ""),
         "smtp_password": os.getenv("SMTP_PASSWORD", ""),
         "sender": os.getenv("EMAIL_SENDER", ""),
-        "recipients": os.getenv("EMAIL_RECIPIENTS", "").split(",") if os.getenv("EMAIL_RECIPIENTS") else [],
+        "recipients": (
+            os.getenv("EMAIL_TO", "").split(",")
+            if os.getenv("EMAIL_TO")
+            else os.getenv("EMAIL_RECIPIENTS", "").split(",") if os.getenv("EMAIL_RECIPIENTS") else []
+        ),
     }
 
 
@@ -104,8 +108,14 @@ def send_email_with_attachments(
             logger.info(f"已添加附件: {attachment.name}")
     
     try:
-        with smtplib.SMTP(config["smtp_host"], config["smtp_port"]) as server:
+        port = config["smtp_port"]
+        # 465 使用 SMTP_SSL（隐式TLS），587/25 使用 SMTP+STARTTLS（显式TLS）
+        if port == 465:
+            server = smtplib.SMTP_SSL(config["smtp_host"], port)
+        else:
+            server = smtplib.SMTP(config["smtp_host"], port)
             server.starttls()
+        with server:
             server.login(config["smtp_user"], config["smtp_password"])
             server.sendmail(sender, recipients, msg.as_string())
         logger.info(f"邮件已发送至 {len(recipients)} 个收件人")
@@ -136,7 +146,7 @@ def send_report_email(
         logger.warning("邮件未配置：缺少 SMTP_USER 或 SMTP_PASSWORD")
         return False
     if not config["recipients"]:
-        logger.warning("邮件未配置：缺少 EMAIL_RECIPIENTS")
+        logger.warning("邮件未配置：缺少 EMAIL_TO 或 EMAIL_RECIPIENTS")
         return False
 
     sender = config["sender"] or config["smtp_user"]
@@ -154,8 +164,13 @@ def send_report_email(
     msg.attach(text_part)
 
     try:
-        with smtplib.SMTP(config["smtp_host"], config["smtp_port"]) as server:
+        port = config["smtp_port"]
+        if port == 465:
+            server = smtplib.SMTP_SSL(config["smtp_host"], port)
+        else:
+            server = smtplib.SMTP(config["smtp_host"], port)
             server.starttls()
+        with server:
             server.login(config["smtp_user"], config["smtp_password"])
             server.sendmail(sender, config["recipients"], msg.as_string())
         logger.info(f"报告已发送至 {len(config['recipients'])} 个收件人")

@@ -60,14 +60,12 @@ def _get_local_model_path():
 
 
 def _get_model():
-    """惰性加载 BGE-M3；优先从本地加载，失败则返回None。"""
+    """惰性加载 BGE-M3；优先从本地加载，失败则从 HF Hub 下载。"""
     global _model
     if _model is not None:
         return _model
     import os
     os.environ.setdefault('HF_ENDPOINT', 'https://hf-mirror.com')
-    os.environ['TRANSFORMERS_OFFLINE'] = '1'
-    os.environ['HF_HUB_OFFLINE'] = '1'
     from sentence_transformers import SentenceTransformer
 
     local_path = _get_local_model_path()
@@ -80,10 +78,18 @@ def _get_model():
             logger.info(f"BGE-M3 本地加载完成，耗时 {time.time() - t0:.1f}s")
             return _model
         except Exception as e:
-            logger.warning(f"BGE-M3 本地加载失败: {e}，将跳过全文索引")
+            logger.warning(f"BGE-M3 本地加载失败: {e}，尝试从 HF Hub 下载")
 
-    logger.warning("BGE-M3 模型不可用，全文索引将被跳过")
-    return None
+    # 本地模型不可用时，从 HF Hub 下载（与 Index A 行为一致）
+    try:
+        t0 = time.time()
+        logger.info("从 HuggingFace Hub 下载 BGE-M3 模型（全文索引）...")
+        _model = SentenceTransformer('BAAI/bge-m3', device='cpu')
+        logger.info(f"BGE-M3 下载加载完成，耗时 {time.time() - t0:.1f}s")
+        return _model
+    except Exception as e:
+        logger.warning(f"BGE-M3 模型不可用（本地和远程均失败）: {e}")
+        return None
 
 
 def encode_text(text: str) -> Optional[np.ndarray]:

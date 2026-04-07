@@ -67,6 +67,9 @@ JSON 结构要求（严格遵守）：
 class CombinedProcessor:
     """合并 LLM 处理器：翻译 + 摘要 + 5W1H + 评分 + 事实判断 一次完成"""
 
+    # 熔断器阈值：连续致命错误达到此数后跳过剩余批次
+    CIRCUIT_BREAKER_THRESHOLD = 3
+
     def __init__(self):
         self._provider = None
         self._initialized = False
@@ -80,6 +83,9 @@ class CombinedProcessor:
             'ai_calls': 0,
             'parse_failures': 0
         }
+        # 熔断器状态
+        self._consecutive_fatal_failures = 0
+        self._circuit_open = False
 
     def _init(self):
         """延迟初始化，避免循环导入"""
@@ -139,6 +145,46 @@ class CombinedProcessor:
         """获取统计信息"""
         return self._stats.copy()
 
+    def is_circuit_open(self) -> bool:
+        """检查熔断器是否已断开（LLM 服务不可用）"""
+        return self._circuit_open
+
+    @staticmethod
+    def _is_fatal_error(error: Exception) -> bool:
+        """判断是否为致命错误（认证/账户类，重试无意义）"""
+        msg = str(error).lower()
+        fatal_keywords = [
+            'account_overdue', 'accountoverdue', 'overdue',
+            '401', '403', 'authentication', 'unauthorized',
+            'invalid api key', 'invalid_api_key',
+            'account deactivated', 'insufficient_quota',
+            'billing', 'payment_required',
+        ]
+        return any(kw in msg for kw in fatal_keywords)
+
+    def _on_llm_failure(self, error: Exception):
+        """LLM 调用失败后的熔断器逻辑"""
+        if self._is_fatal_error(error):
+            self._consecutive_fatal_failures += 1
+            logger.error(
+                f"LLM 致命错误 ({self._consecutive_fatal_failures}/{self.CIRCUIT_BREAKER_THRESHOLD}): {error}"
+            )
+            if self._consecutive_fatal_failures >= self.CIRCUIT_BREAKER_THRESHOLD:
+                self._circuit_open = True
+                logger.critical(
+                    f"熔断器已断开: 连续 {self._consecutive_fatal_failures} 次致命错误，跳过后续批次"
+                )
+        else:
+            # 非致命错误（网络超时/限流等）不触发熔断，仅重置计数
+            logger.warning(f"LLM 非致命错误（不触发熔断）: {error}")
+
+    def _on_llm_success(self):
+        """LLM 调用成功后重置熔断器"""
+        if self._consecutive_fatal_failures > 0:
+            logger.info(f"熔断器重置: 之前连续 {self._consecutive_fatal_failures} 次失败，现已恢复")
+        self._consecutive_fatal_failures = 0
+        self._circuit_open = False
+
     def process_news(self, news: Dict[str, Any]) -> Tuple[Dict[str, Any], float]:
         """
         处理单条新闻
@@ -161,8 +207,10 @@ class CombinedProcessor:
                     max_tokens=1500
                 )
                 result = self._parse_response(raw, news)
+                self._on_llm_success()
             except Exception as e:
                 logger.error(f"CombinedProcessor LLM 调用失败: {e}")
+                self._on_llm_failure(e)
                 result = self._default_result(news)
         else:
             logger.warning("CombinedProcessor: 无可用 AI provider，使用默认值")
@@ -242,24 +290,29 @@ class CombinedProcessor:
     def process_batch(self, news_list: list) -> list:
         """
         批量处理新闻（单次 LLM 调用处理多条新闻）
-        
+
         Args:
             news_list: 新闻列表
-            
+
         Returns:
             [(news, result, accuracy), ...] 列表
         """
         if not news_list:
             return []
-        
+
         self._init()
-        
+
+        # 熔断器检查：如果 LLM 服务不可用，直接跳过
+        if self._circuit_open:
+            logger.warning(f"熔断器已断开，跳过 {len(news_list)} 条新闻")
+            return [(news, None, 0.0) for news in news_list]
+
         if not self._provider:
             logger.warning("CombinedProcessor: 无可用 AI provider，使用默认值")
             return [(news, self._default_result(news), 0.0) for news in news_list]
-        
+
         batch_prompt = self._build_batch_prompt(news_list)
-        
+
         try:
             raw = self._provider.chat(
                 [
@@ -270,10 +323,12 @@ class CombinedProcessor:
                 max_tokens=4000
             )
             results = self._parse_batch_response(raw, len(news_list))
+            self._on_llm_success()
         except Exception as e:
             logger.error(f"CombinedProcessor 批量 LLM 调用失败: {e}")
+            self._on_llm_failure(e)
             results = [None] * len(news_list)
-        
+
         output = []
         for i, news in enumerate(news_list):
             result = results[i] if i < len(results) and results[i] else None
@@ -282,7 +337,7 @@ class CombinedProcessor:
             else:
                 accuracy = self._evaluate_accuracy(result)
                 output.append((news, result, accuracy))
-        
+
         return output
     
     def _build_batch_prompt(self, news_list: list) -> str:

@@ -18,13 +18,26 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: 下载报告（从报告生成工作流获取）
+      - name: 恢复 pip 缓存
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-py311-${{ hashFiles('requirements.txt') }}
+          restore-keys: pip-${{ runner.os }}-py311-
+
+      - name: 下载报告（从采集工作流获取）
         uses: dawidd6/action-download-artifact@v3
         with:
           name: daily-report
-          workflow: report.yml
+          workflow: collect.yml
           path: reports/
           if_no_artifact_found: warn
+
+      - name: 安装中文字体
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-wqy-microhei 2>/dev/null || true
+          fc-cache -fv 2>/dev/null || true
 
       - name: 安装依赖
         run: pip install -r requirements.txt

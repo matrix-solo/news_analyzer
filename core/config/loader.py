@@ -49,34 +49,31 @@ def load_env() -> Dict[str, str]:
         load_dotenv()
         logger.warning("⚠️  使用系统环境变量，未找到本地.env文件")
     
-    # 必需的环境变量
-    REQUIRED_ENVS = {
-        "DEEPSEEK_API_KEY": "DeepSeek API密钥",
-        "NEWS_API_KEY": "NewsAPI密钥"
+    # 推荐（非强制）的环境变量
+    # 兼容新旧两种配置格式：
+    #   新格式: AI_ANALYSIS_KEY, AI_FILTER_KEY（当前工作流使用）
+    #   旧格式: DEEPSEEK_API_KEY, NEWS_API_KEY（历史遗留）
+    RECOMMENDED_ENVS = {
+        "AI_ANALYSIS_KEY": "AI分析模型密钥",
+        "AI_FILTER_KEY": "AI筛选模型密钥",
+        "DEEPSEEK_API_KEY": "DeepSeek API密钥（旧格式）",
+        "NEWS_API_KEY": "NewsAPI密钥（旧格式）"
     }
-    
-    missing = []
+
     config = {}
-    
-    for key, desc in REQUIRED_ENVS.items():
+
+    for key, desc in RECOMMENDED_ENVS.items():
         value = os.getenv(key)
-        if not value or len(value.strip()) < 10:
-            missing.append(f"{key} ({desc})")
-        else:
+        if value and len(value.strip()) >= 10:
             config[key] = value.strip()
-            # 安全日志：不显示完整密钥
             masked_key = value[:4] + "*" * 6 + value[-4:] if len(value) > 10 else "***"
             logger.info(f"🔑 {desc}加载成功（长度:{len(value)}，示例:{masked_key}）")
-    
-    if missing:
-        error_msg = f"❌ 缺少必需环境变量: {', '.join(missing)}"
-        logger.error(error_msg)
-        # Windows建议
-        logger.error("💡 Windows解决方案:")
-        logger.error("  1. 检查.env文件是否存在且格式正确")
-        logger.error("  2. 确认.env文件每行格式为: KEY=VALUE")
-        logger.error("  3. 确保文件使用UTF-8编码（非UTF-8 BOM）")
-        raise EnvironmentError(error_msg)
+        else:
+            logger.debug(f"⚠️  未配置 {key} ({desc})")
+
+    has_any_ai_key = any(k in config for k in ['AI_ANALYSIS_KEY', 'AI_FILTER_KEY', 'DEEPSEEK_API_KEY'])
+    if not has_any_ai_key:
+        logger.warning("⚠️  未配置任何 AI 模型密钥，部分功能可能受影响")
     
     # 可选环境变量（带跨平台默认值）
     import tempfile
