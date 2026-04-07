@@ -161,14 +161,21 @@ class CombinedProcessor:
 
     @staticmethod
     def _is_fatal_error(error: Exception) -> bool:
-        """判断是否为致命错误（认证/账户类，重试无意义）"""
+        """判断是否为致命错误（配置/认证类，重试无意义）
+
+        致命错误特征：无论重试多少次都不会自行恢复，需要人工介入修复配置。
+        包括：认证失败(401)、权限不足(403)、模型不存在(404)、账户欠费等。
+        """
         msg = str(error).lower()
         fatal_keywords = [
             'account_overdue', 'accountoverdue', 'overdue',
-            '401', '403', 'authentication', 'unauthorized',
+            '401', '403', '404',
+            'authentication', 'unauthorized',
             'invalid api key', 'invalid_api_key',
+            'invalid x-api-key',
             'account deactivated', 'insufficient_quota',
             'billing', 'payment_required',
+            'model not found', 'model_not_found',
         ]
         return any(kw in msg for kw in fatal_keywords)
 

@@ -36,6 +36,10 @@ def retry_on_failure(max_retries: int = 3, delay: float = 1.0, backoff: float = 
         max_retries: 最大重试次数
         delay: 初始延迟（秒）
         backoff: 退避系数
+
+    不重试的情况：
+      - TokenLimitExceeded: 直接穿透，由上层处理 BACKUP 切换
+      - 致命 HTTP 错误 (401/403/404): 配置错误，重试无意义
     """
     def decorator(func):
         @wraps(func)
@@ -49,6 +53,10 @@ def retry_on_failure(max_retries: int = 3, delay: float = 1.0, backoff: float = 
                 except Exception as e:
                     # TokenLimitExceeded 直接穿透，不重试
                     if type(e).__name__ == "TokenLimitExceeded":
+                        raise
+                    # 致命配置错误（404/403/401）直接穿透，不重试
+                    msg = str(e).lower()
+                    if any(kw in msg for kw in ['error code: 404', 'error code: 403', 'error code: 401']):
                         raise
                     last_exception = e
                     if attempt < max_retries:
