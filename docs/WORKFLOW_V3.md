@@ -2,7 +2,7 @@
 
 > **文档用途**：面向后端开发与迭代维护人员的权威工作流说明
 > **文档版本**：V3.0（基于第一性原理重构后的最终架构）
-> **最后更新**：2026-03-19
+> **最后更新**：2026-04-08
 > **注意**：本文档替代旧版 WORKFLOW_ARCHITECTURE.md / WORKFLOW_ARCHITECTURE_V2.md，记录的是重构后的真实状态
 
 ---
@@ -183,54 +183,62 @@ db.get_stats()                         # 获取统计信息
 
 ---
 
-## 4. task1：采集流水线（8步）
+## 4. task1：采集流水线（12步）
 
 入口：`task1_collector.py` → `Task1Collector.run()`
 
 ```
 外部RSS源
     │
-    ▼ Step 1: 全信源采集
+    ▼ Step 1: 全信源采集（增量模式）
     │  RSSCollector + IncrementalTracker
     │  增量截断：只取上次采集时间之后的条目
+    │  采集后立即存入 raw_news 表
     │
     ▼ Step 2: 字段规范化
     │  FieldNormalizer.normalize_fields(item)
     │  统一字段名、清洗空值、生成 news_id (SHA256哈希前16位)
     │
-    ▼ Step 3: 轻量级分类
-    │  LightweightClassifier.classify_batch(news_list)
-    │  规则层：关键词匹配领域 → domain
-    │  结果合并：confidence≥0.7 且 domain 为空时填充；始终写入 classification_confidence
+    ▼ Step 3: 存储原始数据（raw_news 表）
     │
-    ▼ Step 4: 基础三层过滤
-    │  ├─ SourceValidator：信源白名单校验（Tier≥3 且 enabled=true）
-    │  ├─ ContentFilter：内容质量过滤（长度、乱码、重复标题）
+    ▼ Step 4: 轻量级分类
+    │  LightweightClassifier.classify_batch(news_list)
+    │  规则层：关键词 + RSS category 映射 → domain
+    │  置信度阈值配置驱动（默认≥0.7 时填充 domain）
+    │
+    ▼ Step 5: 基础三层过滤
+    │  ├─ SourceValidator：信源白名单校验
+    │  ├─ 可信度过滤
     │  └─ 历史去重：db.filter_processed_ids() 批量查询去掉已入库 ID
     │
-    ▼ Step 5: 合并 LLM 处理（单次 API 调用）
+    ▼ Step 6: 合并 LLM 处理（单次 API 调用）
     │  CombinedProcessor.process_news(news)
-    │  输出：translation / summary / 5W1H / domain / tags / scoring(4维)
-    │  provider: FILTER（豆包 doubao-seed-2-0）
+    │  输出：translation / summary / 5W1H / scoring(4维)
+    │  熔断器：连续 3 次致命错误后跳过剩余批次
+    │  Token限额：FILTER 接近日限时自动切换 BACKUP 模型
     │
-    ▼ Step 6: 向量化生成（BGE-M3，仅缺失时）
-    │  检测 news['embedding'] 是否为 None
+    ▼ Step 7: 数据完整性校验
+    │  DataValidator.validate_combined_result(news, result)
+    │  校验通过 → passed；校验失败 → force_stored + 默认值填充
+    │
+    ▼ Step 8: 向量化生成（BGE-M3，passed + force_stored）
     │  仅对缺失向量的新闻调用 BGE-M3 批量编码
-    │  编码后存入 news['embedding']，供后续阶段使用
     │
-    ▼ Step 7: 热度评分
-    │  HeatProcessor.score_batch(news_list)
-    │  BGE-M3 向量 → FAISS 匹配热榜（优先）
+    ▼ Step 9: 热度评分（仅 passed 数据）
+    │  HeatProcessor.calculate_batch(news_list)
+    │  BGE-M3 向量 → FAISS 匹配热榜（优先），配置驱动
     │  降级：TF-IDF 关键词命中计数
     │
-    ▼ Step 8: 数据完整性校验
-    │  DataValidator.validate_and_fix(news)
-    │  检查 5W1H 必填项；缺失时规则补填或标记 extraction_method
+    ▼ Step 10: 批量事务写入 SQLite
+    │  db.insert_news_batch(news_list)
+    │  原子事务：news 表 + processed_news 表同时写入
+    │  更新 raw_news.processed=1
     │
-    ▼ Step 9: 批量事务写入 SQLite
-       db.insert_news_batch(news_list)
-       原子事务：news 表 + processed_news 表同时写入
-       失败时整批回滚，不留半截数据
+    ▼ Step 11: force_stored 修复（已简化）
+    │  不再自动修复，保留数据降权处理
+    │
+    ▼ Step 12: 清理过期原始数据（>7天）
+       删除 raw_news 中 processed=1 的历史记录
 ```
 
 ### 4.1 进度与状态监控
@@ -296,10 +304,7 @@ data/news.db（SQLite，task1 写入的单一权威数据源）
     │  db.get_recent_news(hours=24)
     │  无数据时自动兜底：取最近可用一天（_fallback_latest）
     │
-    ▼ 阶段2: 语义去重（跨信源）
-    │  AIFilterAgent.check_duplicates(news_list)
-    │  DB 层已按 news_id 去重；此处做跨信源语义层去重
-    │  输出：AIDedupResult.kept_ids（保留的 news_id 集合）
+    ▼ 阶段2: 记录新闻数量
     │
     ▼ 阶段3: 生成简要摘要报告
     │  ReportGenerator.generate_brief_report(dedup_news, report_date)
@@ -371,7 +376,11 @@ LLM 调用（FILTER provider）
   scoring.{source_score, influence_score, value_score, compliance_score}
 ```
 
-**失败降级**：LLM 调用失败时返回原始字段（title不翻译，5W1H为空，评分为0），不阻断流水线。
+**熔断器机制**：LLM 连续 3 次致命错误（401/403 认证失败等）后自动跳过剩余批次，避免浪费超时窗口。
+
+**BACKUP 兜底**：FILTER 模型 Token 限额触发（`TokenLimitExceeded`）或 API 失败时，自动切换到 BACKUP 模型重试。
+
+**失败降级**：LLM 调用仍失败时返回原始字段（title不翻译，5W1H为空，评分为0），不阻断流水线。
 
 ### 6.2 HeatProcessor（Step 7 核心）
 
@@ -450,7 +459,7 @@ generate_depth_reports(all_news, report_date, history_news)
 - 清洗空字符串、None → 统一字段名
 - `news_id` = `sha256(title + source + pub_date)[:16]`（内容哈希，可重现）
 - 时间格式标准化 → ISO 8601
-- `source_score` = Tier 映射（Tier1=9, Tier2=7, Tier3=5）
+- `source_score` = Tier 映射（Tier1=9.5, Tier2=7.5, Tier3=5.5）
 
 ### 6.7 DataValidator（Step 8）
 
@@ -483,22 +492,34 @@ provider = ai.get_provider("BACKUP")    # 备用兜底：通义千问 qwen-plus
 
 | Provider | 模型 | 主要调用场景 |
 |----------|------|-------------|
-| FILTER | 豆包 doubao-seed-2-0 | CombinedProcessor（task1 Step5）、AIFilterAgent 语义去重 |
+| FILTER | 豆包 doubao-seed-2-0 系列 | CombinedProcessor（task1 Step6），模型名通过环境变量/AI_FILTER_MODEL Secret配置 |
 | ANALYSIS | DeepSeek-reasoner | DepthAnalyzer 领域深度报告（4章节结构化输出） |
-| BACKUP | 通义千问 qwen-plus | FILTER/ANALYSIS 失败时自动降级 |
+| BACKUP | 豆包 doubao-seed-2-0-pro（推荐） | FILTER Token限额触发时自动切换；配置于 AI_BACKUP_* 环境变量 |
 
 ### 7.3 环境变量
 
 ```bash
-ARK_API_KEY=            # 豆包（必填）
-DOUBAO_MODEL=doubao-seed-2-0-lite-260215
-DOUBAO_API_BASE=https://ark.cn-beijing.volces.com/api/v3
+# 深度分析模型
+AI_ANALYSIS_PROVIDER=deepseek
+AI_ANALYSIS_MODEL=deepseek-reasoner
+AI_ANALYSIS_KEY=
+AI_ANALYSIS_BASE_URL=https://api.deepseek.com/v1
 
-DEEPSEEK_API_KEY=       # DeepSeek
-DEEPSEEK_API_BASE=https://api.deepseek.com/v1
+# 快速筛选模型
+AI_FILTER_PROVIDER=doubao
+AI_FILTER_MODEL=doubao-seed-2-0-lite-260215
+AI_FILTER_KEY=
+AI_FILTER_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
 
-QWEN_API_KEY=           # 通义千问
-QWEN_API_BASE=https://dashscope.aliyuncs.com/compatible-mode/v1
+# 备用模型（Token限额触发时自动切换）
+AI_BACKUP_PROVIDER=
+AI_BACKUP_MODEL=
+AI_BACKUP_KEY=
+AI_BACKUP_BASE_URL=
+
+# Token限额（按天，可选）
+AI_TOKEN_LIMIT_DEFAULT=2000000
+AI_TOKEN_THRESHOLD_DEFAULT=0.9
 ```
 
 ---
@@ -571,19 +592,23 @@ with self.transaction():
 
 ## 10. 定时调度
 
-### 10.1 Windows 任务计划
+### 10.1 本地运行（手动或按需）
 
-| 任务 | 触发时间 | 命令 |
-|------|----------|------|
-| 新闻采集 | 07:00 / 15:00 / 23:00 | `python task1_collector.py` |
-| 报告生成 | 00:10 | `python task2_reporter.py` |
+| 命令 | 用途 |
+|------|------|
+| `python task1_collector.py` | 采集新闻（写入DB） |
+| `python task2_reporter.py` | 生成报告 + 发邮件 |
+| `python task2_reporter.py --no-email` | 生成报告（不发邮件） |
+| `python send_email.py` | 重发最新报告邮件 |
+
+> **注意**：项目已全面迁移到 GitHub Actions 自动化运行，本地无需配置定时任务。如需本地手动测试，直接执行上述命令即可。
 
 ### 10.2 GitHub Actions
 
 | 工作流 | 文件 | 北京时间 | 内容 |
 |--------|------|----------|------|
-| 新闻采集 | `.github/workflows/collect.yml` | 07:00（采集+报告）、15:00、23:00 | task1_collector.py |
-| 报告生成 | `.github/workflows/report.yml` | 00:00 | task2_reporter.py --no-email |
+| 采集+报告 | `.github/workflows/collect.yml` | 07:00（采集+报告）、15:00/23:00（纯采集） | task1 + task2 |
+
 | 邮件推送 | `.github/workflows/send_email.yml` | 08:30 | send_email.py |
 
 **数据持久化**：SQLite `data/` 目录通过 `actions/cache` 在 Actions 运行间保持；报告文件通过 `actions/upload-artifact` 传递给邮件工作流。
@@ -614,7 +639,7 @@ core/config/report_templates.yaml  # 报告模板（minimal/default/detailed）
   enabled: true
 ```
 
-**Tier → source_score 映射**：Tier1=9, Tier2=7, Tier3=5（由 `core/utils/source_scorer.py` 执行）
+**Tier → source_score 映射**：Tier1=9.5, Tier2=7.5, Tier3=5.5（由 `core/utils/source_scorer.py` 执行，配置驱动）
 
 ### 11.3 报告生成阈值
 
@@ -635,23 +660,23 @@ report:
 
 | 字段 | 范围 | 来源 | 说明 |
 |------|------|------|------|
-| `source_score` | 0–10 | 规则（Tier映射） | Tier1=9, Tier2=7, Tier3=5 |
-| `influence_score` | 0–1 | LLM（CombinedProcessor） | 事件影响范围 |
-| `value_score` | 0–1 | LLM（CombinedProcessor） | 投资/政策决策价值 |
+| `source_score` | 0–10 | 规则（Tier映射） | Tier1=9.5, Tier2=7.5, Tier3=5.5 |
+| `influence_score` | 0–10 | LLM（CombinedProcessor） | 事件影响范围 |
+| `value_score` | 0–10 | LLM（CombinedProcessor） | 投资/政策决策价值 |
 | `heat_score` | 0–10 | BGE-M3（HeatProcessor） | 热榜匹配热度 |
-| `final_score` | 25–84 | 公式加权 | 综合评分 |
+| `final_score` | 0–100 | 配置驱动公式加权 | 综合评分 |
 
-### 12.2 final_score 计算公式
+### 12.2 final_score 计算公式（配置驱动）
+
+权重从 `core_config.yaml → scoring.weights` 读取，修改配置即时生效：
 
 ```python
-final_score = (
-    source_score    * 15 +   # 最大贡献 15分（权重15%）
-    influence_score * 30 +   # 最大贡献 30分（权重30%，LLM 0-1 × 30）
-    value_score     * 30 +   # 最大贡献 30分
-    heat_score      *  9     # 最大贡献  9分（0-10 × 0.9）
-)
-# 范围：下限 25（最低信源+0分影响） 上限 84（全满分）
+# 公式: (source×w1 + influence×w2 + value×w3 + heat×w4) / 10 × 100
+# 各项输入范围 0-10，输出范围 0-100
+# 默认权重: source=0.25, influence=0.25, value=0.25, heat=0.25（等权）
 ```
+
+**Tier 分值映射**（配置驱动）：Tier1=9.5, Tier2=7.5, Tier3=5.5, 默认=5.0
 
 ### 12.3 TOP N 排序公式
 

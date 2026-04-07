@@ -8,17 +8,18 @@
 |-----|------|------|-----|
 | v2.0 | 2026-03-21 | ⏸️ 待校验 | 完成所有模块函数扫描 |
 | v2.1 | 2026-03-21 | ✅ 已校验 | 添加概念定义、精确统计、使用状态标注 |
+| v2.2 | 2026-04-08 | ✅ 已更新 | Phase 1 清理后：更新统计、删除已移除文件条目 |
 
 ---
 
 ## 上层文档同步检查
 
-**参考文档**：`Layer1_模块层文档.md` (v1.1)
+**参考文档**：`Layer1_模块层文档.md` (v1.2)
 
 | 检查项 | 状态 | 说明 |
 |-------|------|-----|
-| 模块数量 | ✅ 一致 | 13个模块 |
-| 文件数量 | ✅ 一致 | 84个Python文件 |
+| 模块数量 | ✅ 一致 | 12个模块（scheduler 已删除） |
+| 文件数量 | ✅ 一致 | ~69个Python文件（Phase 1 清理后） |
 | 使用状态 | ✅ 已核实 | 商业版模块为独立Web应用 |
 
 ---
@@ -74,15 +75,14 @@
 | 模块 | 文件数 | 类数 | 模块级函数 | 类方法 | 使用状态 |
 |-----|-------|-----|----------|-------|---------|
 | collector | 11 | 18 | 5 | ~80 | ✅ 正常使用 |
-| processor | 19 | 38 | 36 | 100 | ✅ 正常使用 |
-| storage | 5 | 7 | 3 | ~40 | ✅ 正常使用 |
-| filters | 5 | 10 | 0 | ~30 | ⚠️ 部分废弃 |
+| processor | 18 | 38 | 36 | 100 | ✅ 正常使用 |
+| storage | 3 | 5 | 3 | ~30 | ✅ 正常使用 |
+| filters | 2 | 2 | 0 | ~10 | ✅ 正常使用 |
 | models | 2 | 7 | 0 | ~15 | ✅ 正常使用 |
-| config | 4 | 1 | 19 | ~10 | ✅ 正常使用 |
-| scheduler | 2 | 2 | 1 | ~15 | ❌ 未使用 |
+| config | 3 | 1 | 17 | ~10 | ✅ 正常使用 |
 | service | 2 | 2 | 1 | ~10 | ✅ 正常使用 |
-| utils | 25 | 36 | 73 | ~60 | ✅ 正常使用 |
-| **核心小计** | **75** | **121** | **138** | **~360** | - |
+| utils | 17 | 28 | 65 | ~50 | ✅ 正常使用 |
+| **核心小计** | **61** | **108** | **128** | **~320** | - |
 
 ### 2.2 商业版模块统计
 
@@ -98,12 +98,12 @@
 
 | 统计项 | 数量 |
 |-------|-----|
-| **模块** | 13 |
-| **文件** | 84 |
-| **类** | 133 |
-| **模块级函数** | 154 |
-| **类方法** | ~410 |
-| **函数总计** | ~564 |
+| **模块** | 12 |
+| **文件** | ~69 |
+| **类** | ~120 |
+| **模块级函数** | ~142 |
+| **类方法** | ~380 |
+| **函数总计** | ~522 |
 
 ---
 
@@ -346,8 +346,8 @@
 | `chart_data_service.py` | `ChartDataService`, `DailyMetric` | ✅ 正常使用 |
 | `content_parser.py` | `RuleBasedParser`, `EntityExtractor` | ✅ 正常使用 |
 | `field_normalizer.py` | `FieldNormalizer` | ✅ 正常使用 |
-| `heat_scorer.py` | `HeatScorer` | ✅ 正常使用 |
-| `history_relation_engine.py` | `HistoryRelationEngine` | ✅ 正常使用 |
+| `token_counter.py` | `TokenCounter`, `TokenLimitExceeded` | ✅ 正常使用（Token用量追踪+限额自动切换） |
+
 | `investment_advisor.py` | `InvestmentAdvisor` | ✅ 正常使用 |
 | `ai_fallback_extractor.py` | `AIFallbackExtractor` | ✅ 正常使用 |
 
@@ -357,7 +357,7 @@
 
 **路径**：`core/storage/`
 
-**统计**：7个类，3个模块级函数，约40个类方法
+**统计**：5个类，3个模块级函数，约30个类方法
 
 **使用状态**：✅ 正常使用
 
@@ -384,10 +384,7 @@
 | `get_stats()` | 获取数据库统计 | ✅ |
 | `backup_database(backup_dir)` | 数据库备份 | ✅ |
 
-#### 3.3.2 baseline.py
-
-| 类型 | 名称 | 使用状态 |
-|-----|------|---------|
+-----|------|---------|
 | 类 | `BaselineNews` | ✅ 正常使用 |
 | 类 | `NewsBaseline` | ✅ 正常使用 |
 | 函数 | `get_baseline()` | ✅ 正常使用 |
@@ -411,9 +408,9 @@
 
 **路径**：`core/filters/`
 
-**统计**：10个类，0个模块级函数，约30个类方法
+**统计**：2个类，0个模块级函数，约10个类方法
 
-**使用状态**：⚠️ 部分废弃（content_filter.py已废弃）
+**使用状态**：✅ 正常使用（Phase 1 清理后仅保留 SourceValidator）
 
 #### 3.4.1 source_validator.py
 
@@ -422,26 +419,17 @@
 | 类 | `ValidationResult` | ✅ 正常使用 |
 | 类 | `SourceValidator` | ✅ 正常使用 |
 
-#### 3.4.2 ai_filter_agent.py
-
-| 类型 | 名称 | 使用状态 |
-|-----|------|---------|
+-----|------|---------|
 | 类 | `AIFactCheckResult` | ✅ 正常使用 |
 | 类 | `AIDedupResult` | ✅ 正常使用 |
 | 类 | `AIFilterLog` | 🔧 内部使用 |
 | 类 | `AIFilterAgent` | ✅ 正常使用 |
 
-#### 3.4.3 deduplication.py
-
-| 类型 | 名称 | 使用状态 |
-|-----|------|---------|
+-----|------|---------|
 | 类 | `DedupResult` | ✅ 正常使用 |
 | 类 | `DeduplicationFilter` | ✅ 正常使用 |
 
-#### 3.4.4 content_filter.py
-
-| 类型 | 名称 | 使用状态 |
-|-----|------|---------|
+-----|------|---------|
 | 类 | `ContentCheckResult` | ❌ 已废弃 |
 | 类 | `ContentFilter` | ❌ 已废弃 |
 
@@ -504,26 +492,12 @@
 | `get_project_root()` | 获取项目根目录 | ✅ |
 | `is_windows()` | 检查是否Windows系统 | ✅ |
 
-#### 3.6.3 report_templates.py
-
-| 函数 | 功能 | 状态 |
-|-----|------|-----|
+-----|------|-----|
 | `get_template(name)` | 获取报告模板 | ✅ |
 
 ---
 
-### 3.7 scheduler 模块
-
-**路径**：`core/scheduler/`
-
-**统计**：2个类，1个模块级函数，约15个类方法
-
-**使用状态**：❌ 未使用
-
-#### 3.7.1 task_scheduler.py
-
-| 类型 | 名称 | 使用状态 |
-|-----|------|---------|
+-----|------|---------|
 | 类 | `ScheduledTask` | ❌ 未使用 |
 | 类 | `TaskScheduler` | ❌ 未使用 |
 | 函数 | `run_scheduler_daemon()` | ❌ 未使用 |
@@ -559,7 +533,7 @@
 
 **路径**：`core/utils/`
 
-**统计**：36个类，73个模块级函数，约60个类方法
+**统计**：28个类，65个模块级函数，约50个类方法
 
 **使用状态**：✅ 正常使用
 
@@ -568,29 +542,14 @@
 | 分类 | 文件 | 主要类/函数 | 状态 |
 |-----|-----|-----------|------|
 | **网络请求** | `http_client.py` | `create_retry_session()`, `safe_request()` | ✅ |
-| | `proxy_config.py` | `get_proxy_config()` | ✅ |
-| **缓存系统** | `cache.py` | `MemoryCache`, `FileCache`, `cached()` | ✅ |
 | **错误处理** | `error_handling.py` | `NewsAnalyzerError`, `error_handler()` | ✅ |
-| | `errors.py` | `CollectionError`, `ProcessingError`, `StorageError` | ✅ |
 | **监控追踪** | `heartbeat.py` | `HeartbeatMonitor` | ✅ |
-| | `monitoring.py` | `DataFlowMonitor`, `SystemMonitor` | ✅ |
-| | `performance.py` | `PerformanceMonitor`, `timed()` | ✅ |
-| | `workflow_timer.py` | `WorkflowTimer` | ✅ |
 | **热榜数据** | `hotboard_manager.py` | `HotboardManager` | ✅ |
-| | `hotboard_fetcher.py` | `HotboardFetcher` | ⚠️ 已弃用 |
 | **采集相关** | `collection_config.py` | `CollectionConfigManager` | ✅ |
-| | `incremental_tracker.py` | `IncrementalTracker` | ✅ |
-| | `source_scorer.py` | `get_source_score()` | ✅ |
 | **日志系统** | `log_utils.py` | `SanitizedLogger` | ✅ |
-| | `logging_config.py` | `setup_logging()` | ✅ |
 | **报告生成** | `md2pdf.py` | `create_pdf_from_md()` | ✅ |
-| | `chart_generator.py` | `generate_domain_chart()` | ⚠️ 暂不可用 |
-| | `email_sender.py` | `send_email_with_attachments()` | ✅ |
 | **市场数据** | `market_data_fetcher.py` | `MarketDataFetcher` | ✅ |
 | **工具函数** | `text_utils.py` | `get_news_title()`, `parse_json_str()` | ✅ |
-| | `security.py` | `hash_content()`, `sanitize_url()` | ✅ |
-| | `api_optimizer.py` | `APIOptimizer` | ✅ |
-| | `task_lock.py` | `TaskLock`, `task_lock()` | ✅ |
 
 ---
 
@@ -639,7 +598,7 @@
 
 **路径**：`commercial/web/`
 
-**统计**：0个类，13个模块级函数
+**统计**：0个类，12个模块（scheduler 已删除）级函数
 
 **使用状态**：✅ 正常使用
 
@@ -657,8 +616,8 @@
 
 | 检查项 | Layer 1 | Layer 2 | 状态 |
 |-------|---------|---------|------|
-| 模块总数 | 13 | 13 | ✅ 一致 |
-| 核心模块 | 9 | 9 | ✅ 一致 |
+| 模块总数 | 12 | 12 | ✅ 一致 |
+| 核心模块 | 8 | 8 | ✅ 一致 |
 | 商业版模块 | 4 | 4 | ✅ 一致 |
 
 ### 5.2 文件数量校验
@@ -666,26 +625,26 @@
 | 模块 | Layer 1 | Layer 2 | 状态 |
 |-----|---------|---------|------|
 | collector | 11 | 11 | ✅ 一致 |
-| processor | 19 | 19 | ✅ 一致 |
-| storage | 5 | 5 | ✅ 一致 |
-| filters | 5 | 5 | ✅ 一致 |
+| processor | 18 | 18 | ✅ 一致 |
+| storage | 3 | 3 | ✅ 一致 |
+| filters | 2 | 2 | ✅ 一致 |
 | models | 2 | 2 | ✅ 一致 |
-| config | 4 | 4 | ✅ 一致 |
-| scheduler | 2 | 2 | ✅ 一致 |
+| config | 3 | 3 | ✅ 一致 |
+
 | service | 2 | 2 | ✅ 一致 |
-| utils | 25 | 25 | ✅ 一致 |
+| utils | 17 | 17 | ✅ 一致 |
 | compliance | 5 | 5 | ✅ 一致 |
 | services | 2 | 2 | ✅ 一致 |
 | subscription | 2 | 2 | ✅ 一致 |
 | web | 2 | 2 | ✅ 一致 |
-| **总计** | **84** | **84** | ✅ 一致 |
+| **总计** | **~69** | **~69** | ✅ 一致 |
 
 ### 5.3 使用状态校验
 
 | 模块 | Layer 1状态 | Layer 2状态 | 状态 |
 |-----|------------|------------|------|
-| scheduler | ❌ 未使用 | ❌ 未使用 | ✅ 一致 |
-| filters | ⚠️ 部分废弃 | ⚠️ 部分废弃 | ✅ 一致 |
+
+| filters | ✅ 正常使用 | ✅ 正常使用 | ✅ 一致 |
 | 其他模块 | ✅ 正常使用 | ✅ 正常使用 | ✅ 一致 |
 
 ### 5.4 领域定义差异（待解决）
@@ -702,10 +661,10 @@
 
 ## 六、校验清单
 
-- [x] 所有模块是否已扫描完成？ → 13个模块全部扫描
-- [x] 所有类是否已列出？ → 133个类已列出
-- [x] 所有模块级函数是否已列出？ → 154个函数已列出
-- [x] 主要方法是否已列出？ → ~410个方法已列出
+- [x] 所有模块是否已扫描完成？ → 12个模块（scheduler 已删除）全部扫描
+- [x] 所有类是否已列出？ → ~120个类已列出
+- [x] 所有模块级函数是否已列出？ → ~142个函数已列出
+- [x] 主要方法是否已列出？ → ~380个方法已列出
 - [x] 与Layer 1文档是否一致？ → 模块、文件数量一致
 - [x] 使用状态是否已标注？ → 每个类/函数已标注状态
 - [x] 概念定义是否清晰？ → 已添加类/函数定义说明

@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-合并处理器 - 单次 LLM 调用完成翻译 + 摘要 + 5W1H + 评分 + 事实判断
+合并处理器 - 单次 LLM 调用完成翻译 + 摘要 + 5W1H + 评分
 
 设计原则：低成本（一次调用 = 五步输出），替代原有分散的多次 AI 调用。
+
+降级路径：
+  1. FILTER provider 调用失败或 Token 限额触发（TokenLimitExceeded）→ 尝试 BACKUP provider
+  2. BACKUP 也失败 → 返回默认值（不阻断流水线）
+
+熔断器：
+  连续 3 次致命错误（401/403 认证失败等）后跳过剩余批次。
+  TokenLimitExceeded 不计入熔断器（不是 LLM 服务故障）。
 """
 
 import json

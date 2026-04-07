@@ -2,8 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 AI处理模块 - 多厂商统一处理
+
 配置格式：AI_<用途>_<信息类型> = <值>
-用途：ANALYSIS(深度分析) / FILTER(快速筛选) / BACKUP(备用)
+  用途：ANALYSIS(深度分析) / FILTER(快速筛选) / BACKUP(备用)
+  信息类型：PROVIDER(厂商) / MODEL(模型名) / KEY(密钥) / BASE_URL(API地址)
+
+Token 限额集成：
+  BaseProvider.chat() 中前置检查阈值（check_and_raise），后置记录用量（record_usage）。
+  超限时抛出 TokenLimitExceeded，由 CombinedProcessor 捕获后切换到 BACKUP provider。
+  retry_on_failure 装饰器对 TokenLimitExceeded 不重试（直接穿透）。
 """
 
 import os

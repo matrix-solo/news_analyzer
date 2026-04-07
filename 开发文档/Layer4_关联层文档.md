@@ -18,7 +18,7 @@
 
 | 检查项 | 阶段一记录 | Layer 4实际 | 状态 | 说明 |
 |-------|-----------|------------|------|-----|
-| 核心模块数量 | 9个 | 9个 | ✅ 一致 | collector, processor, storage, filters, models, config, scheduler, service, utils |
+| 核心模块数量 | 8个 | 8个 | ✅ 一致 | collector, processor, storage, filters, models, config, service, utils |
 | 数据库表数量 | 18个 | 18个 | ✅ 一致 | - |
 | 业务流程阶段 | Task1: 11阶段 | 已映射 | ✅ 一致 | 已建立函数-字段对应关系 |
 

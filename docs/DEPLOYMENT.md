@@ -21,8 +21,8 @@ AI_ANALYSIS_KEY=your-api-key
 AI_ANALYSIS_BASE_URL=https://api.deepseek.com/v1
 
 AI_FILTER_PROVIDER=doubao
-AI_FILTER_MODEL=doubao-pro-32k
-AI_FILTER_KEY=your-api-key
+AI_FILTER_MODEL=doubao-seed-2-0-lite-260215
+AI_FILTER_KEY=your-doubao-api-key
 AI_FILTER_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
 
 # 邮件配置（可选）

@@ -17,9 +17,9 @@
 - [x] 支持代理配置
 
 ### 3. 日志管理
-- [x] utils/logging_config.py - 日志轮转配置
+- [x] log_utils.py - 日志脱敏工具（logging_config.py 已删除，日志配置内联到各模块）
 - [x] 支持按日期分割日志文件
-- [x] 支持日志文件大小限制 (10MB)
+- [x] 支持敏感信息脱敏（SanitizedLogger）
 - [x] 支持敏感信息脱敏
 
 ### 4. 数据持久化
