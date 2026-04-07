@@ -431,12 +431,9 @@ class AIFilterAgent:
     @staticmethod
     def _calc_final_score(source_score: float, influence_score: float,
                           heat_score: float, value_score: float) -> float:
-        """计算最终得分（公式统一管理，权重：各25%）"""
-        raw = (source_score / 10 * 0.25
-               + influence_score / 10 * 0.25
-               + heat_score / 10 * 0.25
-               + value_score / 10 * 0.25) * 100
-        return round(raw, 1)
+        """计算最终得分（使用统一评分函数）"""
+        from core.utils.source_scorer import calc_final_score
+        return calc_final_score(source_score, influence_score, value_score, heat_score)
 
     def _parse_fact_check_data(self, data: Dict) -> AIFactCheckResult:
         """从已解析的 JSON dict 构建 AIFactCheckResult（内部通用）"""

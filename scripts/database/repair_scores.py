@@ -46,11 +46,17 @@ logger = logging.getLogger("repair_scores")
 
 # ─── 常量 ────────────────────────────────────────────────────────────────────
 
+# 从 core_config.yaml 统一读取 Tier 分值
+from core.utils.source_scorer import get_scoring_config as _get_scoring_cfg
+_scoring_cfg = _get_scoring_cfg()
+_tier_scores = _scoring_cfg.get('tier_scores', {1: 9.5, 2: 7.5, 3: 5.5})
+_default_score = _scoring_cfg.get('default_source_score', 5.0)
+
 TIER_TO_SOURCE_SCORE: Dict[Optional[int], float] = {
-    1: 10.0,
-    2: 8.0,
-    3: 6.0,
-    None: 5.0,   # 未知信源
+    1: _tier_scores.get(1, 9.5),
+    2: _tier_scores.get(2, 7.5),
+    3: _tier_scores.get(3, 5.5),
+    None: _default_score,
 }
 
 # 历史 heat_score 启发式基准（无法追溯历史热榜）
@@ -73,12 +79,6 @@ HEAT_HISTORICAL_CAP = 7.5
 
 # LLM 批次大小
 DEFAULT_BATCH_SIZE = 15
-
-# 评分权重（README 定义）
-W_SOURCE    = 0.25
-W_INFLUENCE = 0.25
-W_HEAT      = 0.25
-W_VALUE     = 0.25
 
 
 # ─── sources.yaml 信源→tier 映射 ────────────────────────────────────────────
@@ -397,14 +397,10 @@ def compute_final_score(
     value_score: float,
     compliance_deduction: float = 0.0,
 ) -> float:
-    weighted = (
-        source_score    * W_SOURCE
-        + influence_score * W_INFLUENCE
-        + heat_score      * W_HEAT
-        + value_score     * W_VALUE
-    )
-    score = weighted * 10.0 - compliance_deduction
-    return round(max(0.0, min(100.0, score)), 1)
+    """使用统一评分函数，兼容 repair 脚本的 compliance_deduction"""
+    from core.utils.source_scorer import calc_final_score
+    base = calc_final_score(source_score, influence_score, value_score, heat_score)
+    return round(max(0.0, min(100.0, base - compliance_deduction)), 1)
 
 
 # ─── 主流程 ──────────────────────────────────────────────────────────────────

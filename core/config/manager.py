@@ -277,6 +277,16 @@ class ConfigManager:
 
                     self._configs['hotboard'] = core_config['hotboard']
 
+                if 'scoring' in core_config:
+
+                    self._configs['scoring'] = core_config['scoring']
+
+                    logger.info("加载评分配置: 权重、Tier映射、热度规则")
+
+                if 'ai_processing' in core_config:
+
+                    self._configs['ai_processing'] = core_config['ai_processing']
+
             except Exception as e:
 
                 logger.error(f"加载 core_config.yaml 失败: {e}")

@@ -976,7 +976,8 @@ class Task1NewsCollector:
             v = news.get('value_score', DefaultValues.SCORE_DEFAULT)
             sc = news.get('source_score', DefaultValues.SCORE_DEFAULT)
             h = news.get('heat_score', DefaultValues.SCORE_DEFAULT)
-            news['final_score'] = sc * 0.25 + si * 0.25 + v * 0.25 + h * 0.25
+            from core.utils.source_scorer import calc_final_score
+            news['final_score'] = calc_final_score(sc, si, v, h)
 
         # P-12 修复：使用统一文本默认值
         if not news.get('who'):

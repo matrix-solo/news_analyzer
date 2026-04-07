@@ -1,26 +1,51 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""信源评分 - 基于 sources.yaml 的 Tier 层级"""
+"""
+信源评分与综合评分计算
+
+配置来源：core_config.yaml → scoring 段
+所有评分参数均通过配置驱动，修改配置即可调整评分策略。
+"""
 import os
 import yaml
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Tier 层级到分数的映射（基于 collection_strategy 中的 weight）
-# 统一为 0-10 范围
-# tier1: weight 9-10 → 9.5
-# tier2: weight 7-8 → 7.5
-# tier3: weight 5-6 → 5.5
-# null/disabled: 默认 5.0
-TIER_SCORES = {
-    1: 9.5,    # 核心骨架 - 最高权重
-    2: 7.5,    # 区域支柱 - 中等权重
-    3: 5.5,    # 专业补充 - 基础权重
-}
+# ── 从配置文件加载评分参数 ─────────────────────────────────────
 
-# 默认分数（未知信源）
+def _load_scoring_config() -> dict:
+    """从 core_config.yaml 加载评分配置，失败时返回内置默认值"""
+    try:
+        from core.config.manager import get_config_manager
+        mgr = get_config_manager()
+        cfg = mgr.get('scoring')
+        if cfg and isinstance(cfg, dict):
+            return cfg
+    except Exception:
+        pass
+
+    # 内置默认值（与 core_config.yaml 保持一致）
+    return {
+        'weights': {'source': 0.25, 'influence': 0.25, 'value': 0.25, 'heat': 0.25},
+        'tier_scores': {1: 9.5, 2: 7.5, 3: 5.5},
+        'default_source_score': 5.0,
+        'defaults': {'score': 5.0},
+    }
+
+
+def get_scoring_config() -> dict:
+    """获取评分配置（带缓存）"""
+    return _load_scoring_config()
+
+
+# ── 信源 Tier 评分 ────────────────────────────────────────────
+
+# 默认分数（未知信源）— 配置未加载时的后备值
 DEFAULT_SCORE = 5.0
+
+# 缓存已加载的配置
+_source_cache = {}
 
 # 缓存已加载的配置
 _source_cache = {}
@@ -91,14 +116,14 @@ def get_source_score(source_name: str) -> float:
 
     评分逻辑：
     1. 从 sources.yaml 查找信源的 Tier 层级
-    2. 根据 Tier 层级返回对应分数
-    3. 未找到的信源返回默认分数
+    2. 从 core_config.yaml 读取 Tier → 分数映射
+    3. 未找到的信源返回 default_source_score
 
-    Tier 分数映射（0-10范围）：
-    - Tier 1 (核心骨架): 9.5 - 路透社、美联社、法新社等
-    - Tier 2 (区域支柱): 7.5 - BBC、纽约时报、金融时报等
-    - Tier 3 (专业补充): 5.5 - TechCrunch、36氪等
-    - 默认: 5.0
+    Tier 分数映射（默认值，可通过 core_config.yaml 调整）：
+    - Tier 1 (核心骨架): 9.5 - 路透社、美联社、法新社等顶级通讯社
+    - Tier 2 (区域支柱): 7.5 - BBC、纽约时报、金融时报等主流媒体
+    - Tier 3 (专业补充): 5.5 - TechCrunch、36氪等垂直领域媒体
+    - 默认: 5.0 - 未在 sources.yaml 中定义的信源
     """
     if not source_name:
         return DEFAULT_SCORE
@@ -117,9 +142,11 @@ def get_source_score(source_name: str) -> float:
                 logger.debug(f"模糊匹配: {source_name} -> {name} (tier={tier})")
                 break
 
-    # 根据 Tier 返回分数
+    # 从配置读取 Tier → 分数映射
     if tier is not None:
-        return TIER_SCORES.get(tier, DEFAULT_SCORE)
+        scoring_cfg = get_scoring_config()
+        tier_scores = scoring_cfg.get('tier_scores', {})
+        return tier_scores.get(tier, scoring_cfg.get('default_source_score', DEFAULT_SCORE))
 
     return DEFAULT_SCORE
 
@@ -152,3 +179,39 @@ def reload_config():
     global _source_cache
     _source_cache = {}
     return _load_sources_config()
+
+
+# ── 统一综合评分计算 ─────────────────────────────────────────
+
+def calc_final_score(
+    source_score: float,
+    influence_score: float,
+    value_score: float,
+    heat_score: float,
+) -> float:
+    """
+    计算综合评分（final_score）
+
+    公式: (source×w1 + influence×w2 + value×w3 + heat×w4) / 10 × 100
+    输入: 各项 0-10 范围
+    输出: 0-100 范围，保留一位小数
+
+    权重从 core_config.yaml → scoring.weights 读取
+    默认: source=0.25, influence=0.25, value=0.25, heat=0.25
+    """
+    scoring_cfg = get_scoring_config()
+    weights = scoring_cfg.get('weights', {})
+
+    w_source = weights.get('source', 0.25)
+    w_influence = weights.get('influence', 0.25)
+    w_value = weights.get('value', 0.25)
+    w_heat = weights.get('heat', 0.25)
+
+    raw = (
+        source_score / 10 * w_source
+        + influence_score / 10 * w_influence
+        + value_score / 10 * w_value
+        + heat_score / 10 * w_heat
+    ) * 100
+
+    return round(raw, 1)

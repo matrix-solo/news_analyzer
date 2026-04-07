@@ -28,7 +28,18 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-_SIM_THRESHOLD = 0.85   # 匹配阈值
+
+def _get_sim_threshold() -> float:
+    """从配置读取匹配阈值"""
+    try:
+        from core.config.manager import get_config_manager
+        mgr = get_config_manager()
+        threshold = mgr.get('scoring.heat.similarity_threshold')
+        if threshold is not None:
+            return float(threshold)
+    except Exception:
+        pass
+    return 0.85
 
 
 # ─── 向量热榜索引（统一由 HotboardManager 管理）───────────────────────────────
@@ -124,7 +135,7 @@ class HeatProcessor:
         if cache is None:
             return self._fallback(news)
 
-        platform_sims = cache.match_platforms(query_vec)
+        platform_sims = cache.match_platforms(query_vec, threshold=_get_sim_threshold())
         score = _score_from_matches(platform_sims)
 
         if platform_sims:
@@ -205,7 +216,7 @@ class HeatProcessor:
         
         scores = []
         for i, vec in enumerate(vecs):
-            platform_sims = cache.match_platforms(vec)
+            platform_sims = cache.match_platforms(vec, threshold=_get_sim_threshold())
             score = _score_from_matches(platform_sims)
             scores.append(score)
             
