@@ -4,7 +4,7 @@
 
 每日自动完成：多信源采集 → AI 解析评分 → 简报 + 深度报告 → 邮件推送。
 
-**最后更新**：2026-04-07 | **架构**：单一数据路径（SQLite）| **配置驱动评分** | **运行环境**：GitHub Actions + 本地 Windows/Linux
+**最后更新**：2026-04-08 | **架构**：单一数据路径（SQLite）| **配置驱动评分** | **Token 限额自动切换** | **运行环境**：GitHub Actions + 本地 Windows/Linux
 
 ---
 
@@ -49,7 +49,18 @@ core/
 |------|------|----------|
 | FILTER | 翻译 + 摘要 + 5W1H + 评分（单次合并调用） | 豆包 doubao-seed-2-0 |
 | ANALYSIS | 领域深度分析报告 | DeepSeek-reasoner |
-| BACKUP | 兜底备用 | 通义千问 |
+| BACKUP | 兜底备用（错误/token 限额自动切换） | 豆包 doubao-seed-2-0-pro |
+
+### Token 限额自动切换
+
+系统自动追踪每日 AI 调用的 token 用量，当 FILTER 模型接近日限额时自动切换到 BACKUP 模型：
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| `AI_TOKEN_LIMIT_DEFAULT` | `2000000` | 日限额（tokens） |
+| `AI_TOKEN_THRESHOLD_DEFAULT` | `0.9` | 触发切换的阈值（90%） |
+
+通过 `core_config.yaml → token_limits` 或环境变量配置，支持按模型独立设置限额。用量数据持久化到 `data/token_usage.json`，按天自动重置。
 
 ---
 
@@ -179,15 +190,15 @@ news_analyzer/
 │   │   └── crawlers/               定向爬虫
 │   │
 │   ├── filters/
-│   │   ├── source_validator.py     信源白名单校验
-│   │   ├── content_filter.py       内容质量过滤
-│   │   └── deduplication.py        哈希去重
+│   │   └── source_validator.py     信源白名单 + 可信度校验
 │   │
 │   ├── processor/
-│   │   ├── combined_processor.py       单次 LLM 合并处理 + 熔断器
+│   │   ├── combined_processor.py       单次 LLM 合并处理 + 熔断器 + BACKUP 兜底
+│   │   ├── ai_processor.py             多厂商 AI 统一接口 + token 计数
+│   │   ├── token_counter.py            Token 用量追踪 + 限额自动切换（按天）
 │   │   ├── content_parser.py           RuleBasedParser + EntityExtractor
 │   │   ├── field_normalizer.py         字段标准化
-│   │   ├── lightweight_classifier.py   轻量级领域分类
+│   │   ├── lightweight_classifier.py   轻量级领域分类（配置驱动）
 │   │   ├── heat_processor.py           BGE-M3 热度向量匹配（配置驱动）
 │   │   ├── data_validator.py           校验 + AI 补救 + 默认值填充
 │   │   ├── history_relation_engine_bge3.py  BGE-M3 历史关联引擎（索引A）
@@ -196,7 +207,8 @@ news_analyzer/
 │   │       └── report_generator.py    简报 + 深度报告双轨生成
 │   │
 │   ├── storage/
-│   │   └── database.py             NewsDatabase + NewsData（SQLite 主库）
+│   │   ├── database.py             NewsDatabase + NewsData（SQLite 主库）
+│   │   └── file_manager.py         文件管理 + 原始新闻保存
 │   │
 │   ├── config/
 │   │   ├── manager.py              统一配置管理器
@@ -276,6 +288,12 @@ scoring:
 ai_processing:
   batch_size: 4
   max_retry: 1
+
+# Token 用量限额（按天自动重置）
+token_limits:
+  default_limit: 2000000       # 默认日限额（tokens）
+  default_threshold: 0.9       # 触发自动切换的阈值比例（90%）
+  models: {}                   # 按模型覆盖，示例: {doubao-seed-2-0-latest: {limit: 2000000}}
 ```
 
 ### `.env` 关键变量

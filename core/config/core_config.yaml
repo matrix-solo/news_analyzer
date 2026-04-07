@@ -1,6 +1,6 @@
 # 核心配置文件
-# 合并了 AI 提供者、知识库、评分和热榜配置
-# 版本: 2.0
+# 合并了 AI 提供者、评分和热榜配置
+# 版本: 3.0
 
 # ====================== AI 提供者配置 ======================
 ai_providers:
@@ -40,38 +40,6 @@ ai_providers:
     #   name: "自定义厂商"
     #   base_url: "https://your-api-endpoint.com/v1"
     #   sdk: "openai"
-
-# ====================== 知识库配置 ======================
-knowledge:
-  knowledge_base:
-    type: chroma
-    persist_dir: data/knowledge_base/chroma
-    collection_name: news_articles
-    embedding_dimension: 1024
-
-  embedding:
-    provider: local
-    model: BAAI/bge-m3
-    fast_model: all-MiniLM-L6-v2
-    batch_size: 32
-    max_length: 8192
-
-  retrieval:
-    top_k: 10
-    min_score: 0.5
-    time_decay_days: 30
-    max_context_length: 4000
-    enable_hybrid: false
-
-  indexing:
-    strategy: incremental
-    chunk_size: 512
-    chunk_overlap: 50
-    content_max_length: 8000
-
-  cleanup:
-    retention_days: 90
-    schedule: "0 3 * * *"
 
 # ====================== AI 处理配置 ======================
 ai_processing:
@@ -154,3 +122,18 @@ scoring:
     score: 5.0              # 各评分维度缺失时的默认值
     accuracy_pass: 0.6      # accuracy_score ≥ 此值视为校验通过
   lightweight_confidence: 0.7  # 轻量级分类置信度阈值，≥ 此值才填充 domain
+
+# ====================== Token 用量限额 ======================
+token_limits:
+  default_limit: 2000000      # 默认日限额（tokens），0 表示不限制
+  default_threshold: 0.9      # 触发自动切换的阈值比例（0.9 = 90%）
+  # 按模型覆盖（key 为 AI_*_MODEL 环境变量的值）
+  models: {}
+  # 示例:
+  # models:
+  #   doubao-seed-2-0-latest:
+  #     limit: 2000000
+  #     threshold: 0.9
+  #   deepseek-reasoner:
+  #     limit: 10000000
+  #     threshold: 0.9

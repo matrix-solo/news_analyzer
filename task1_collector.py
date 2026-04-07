@@ -63,7 +63,7 @@ from core.processor.content_parser import RuleBasedParser
 
 from core.processor import FieldNormalizer, LightweightClassifier, CombinedProcessor, HeatProcessor, DataValidator
 
-from core.utils.source_scorer import get_source_score
+from core.utils.source_scorer import get_source_score, get_scoring_config
 
 from core.utils.task_lock import task_lock
 
@@ -200,6 +200,15 @@ class Task1NewsCollector:
             'final_failed': 0,
 
         }
+
+    @staticmethod
+    def _get_lightweight_confidence_threshold() -> float:
+        """从配置读取轻量级分类置信度阈值"""
+        try:
+            cfg = get_scoring_config()
+            return float(cfg.get('lightweight_confidence', 0.7))
+        except Exception:
+            return 0.7
 
     @staticmethod
     def _resolve_field_with_priority(field_name: str, sources: dict, default=None):
@@ -373,7 +382,7 @@ class Task1NewsCollector:
                 # P-03 修复：存储分类置信度
                 news['classification_confidence'] = cls.get('confidence', 0.5)
                 
-                if not news.get('domain') and cls.get('confidence', 0) >= 0.7:
+                if not news.get('domain') and cls.get('confidence', 0) >= self._get_lightweight_confidence_threshold():
                     news['domain'] = cls['domain']
 
         logger.info(f"轻量级分类完成: {len(normalized_news)} 条新闻")
@@ -1599,287 +1608,11 @@ class Task1NewsCollector:
         
         return None
 
-    def _recheck_fallback_news(self, fallback_news: List[Dict]):
-
-        """
-
-        重新判断"待分类"新闻(使用高级模型)
-
-        Args:
-
-            fallback_news: 需要重新判断的新闻列表
-
-        """
-
-        if not fallback_news:
-
-            return
-
-        logger.info(f"开始重新判断 {len(fallback_news)} 条待分类新闻...")
-
-        try:
-
-            # 直接使用 AIProcessor 获取 ANALYSIS 模型(深度分析模型)
-
-            from core.processor.ai_processor import AIProcessor
-
-            premium_processor = AIProcessor()
-
-            analysis_provider = premium_processor.get_provider("ANALYSIS")
-
-            if not analysis_provider:
-
-                logger.warning("ANALYSIS 模型不可用,使用 FILTER 模型重新判断")
-
-                analysis_provider = premium_processor.get_provider("FILTER")
-
-            if not analysis_provider:
-
-                logger.error("没有可用的 AI 模型,跳过重新判断")
-
-                return
-
-            logger.info(f"使用高级模型: {analysis_provider.model} ({analysis_provider.provider})")
-
-            # 逐条重新判断
-
-            recheck_passed = 0
-
-            recheck_failed = 0
-
-            for news in fallback_news:
-
-                try:
-
-                    # 构建判断提示词
-
-                    prompt = self._build_recheck_prompt(news)
-
-                    messages = [{"role": "user", "content": prompt}]
-
-                    # 调用高级模型
-
-                    response = analysis_provider.chat(messages)
-
-                    # 解析结果
-
-                    result = self._parse_recheck_response(response, news)
-
-                    if result['is_factual'] and result['w5h1_score'] >= 3:
-
-                        # 重新判断成功,更新数据库
-
-                        self._update_news_after_recheck_v2(news, result)
-
-                        recheck_passed += 1
-
-                        logger.info(f"  [RECHECK PASS] {news['title'][:30]}... (5W1H: {result['w5h1_score']})")
-
-                    else:
-
-                        # 仍然失败,标记为已拒绝
-
-                        self._mark_news_as_rejected_v2(news, result)
-
-                        recheck_failed += 1
-
-                        logger.info(f"  [RECHECK REJECT] {news['title'][:30]}... ({result.get('content_type', '未知')})")
-
-                except Exception as e:
-
-                    logger.warning(f"  [RECHECK ERROR] {news['title'][:30]}... 错误: {e}")
-
-                    recheck_failed += 1
-
-            logger.info(f"重新判断完成: 通过 {recheck_passed} 条, 拒绝 {recheck_failed} 条")
-
-            self.stats['recheck_passed'] = recheck_passed
-
-            self.stats['recheck_failed'] = recheck_failed
-
-        except Exception as e:
-
-            logger.error(f"重新判断失败: {e}")
-
-            logger.warning("待分类新闻将保持原状态,下次采集时会重新处理")
-
-    def _build_recheck_prompt(self, news: Dict) -> str:
-
-        """构建重新判断的提示词"""
-
-        return f"""请分析以下新闻,判断其是否为事实性新闻,并进行5W1H分析。
-
-## 待分析新闻
-
-标题:{news['title']}
-
-来源:{news.get('source_name', '未知')}
-
-内容:{news.get('content', '')[:1000]}
-
-## 输出要求
-
-请以JSON格式输出:
-
-{{
-
-    "is_factual": true/false,
-
-    "content_type": "新闻/评论/广告/其他",
-
-    "w5h1_analysis": {{
-
-        "who": "事件主体",
-
-        "what": "事件内容",
-
-        "when": "事件时间",
-
-        "where": "事件地点",
-
-        "why": "事件原因",
-
-        "how": "事件方式"
-
-    }},
-
-    "w5h1_score": 0-6,
-
-    "domain": "政治/经济/科技/体育/娱乐/其他",
-
-    "confidence": 0.0-1.0
-
-}}
-
-注意:w5h1_score 是 5W1H 分析的完整度得分(0-6分)。"""
-
-    def _parse_recheck_response(self, response: str, news: Dict) -> Dict:
-
-        """解析重新判断的响应"""
-
-        from utils.text_utils import parse_json_str
-
-        try:
-
-            result = parse_json_str(response)
-
-            if not isinstance(result, dict):
-
-                raise ValueError("响应不是有效的JSON对象")
-
-            return {
-
-                'is_factual': result.get('is_factual', False),
-
-                'content_type': result.get('content_type', '其他'),
-
-                'w5h1_analysis': result.get('w5h1_analysis', {}),
-
-                'w5h1_score': result.get('w5h1_score', 0),
-
-                'domain': result.get('domain', '其他'),
-
-                'confidence': result.get('confidence', 0.0)
-
-            }
-
-        except Exception as e:
-
-            logger.debug(f"解析响应失败: {e}")
-
-            return {
-
-                'is_factual': False,
-
-                'content_type': '解析失败',
-
-                'w5h1_analysis': {},
-
-                'w5h1_score': 0,
-
-                'domain': '其他',
-
-                'confidence': 0.0
-
-            }
-
-    def _update_news_after_recheck_v2(self, news: Dict, result: Dict):
-
-        """重新判断成功后更新数据库"""
-
-        try:
-
-            w5h1 = result.get('w5h1_analysis', {})
-
-            with self.db.transaction() as conn:
-
-                cursor = conn.cursor()
-
-                cursor.execute("""
-
-                    UPDATE news SET
-
-                        domain = ,
-
-                        score = 75.0,
-
-                        who = , what = , when_time = , where_place = , why = , how = 
-
-                    WHERE id = 
-
-                """, (
-
-                    result.get('domain', '其他'),
-
-                    w5h1.get('who', ''),
-
-                    w5h1.get('what', ''),
-
-                    w5h1.get('when', ''),
-
-                    w5h1.get('where', ''),
-
-                    w5h1.get('why', ''),
-
-                    w5h1.get('how', ''),
-
-                    news['news_id']
-
-                ))
-
-            logger.debug(f"已更新新闻: {news['news_id']}")
-
-        except Exception as e:
-
-            logger.error(f"更新新闻失败: {e}")
-
-    def _mark_news_as_rejected_v2(self, news: Dict, result: Dict):
-
-        """标记新闻为已拒绝"""
-
-        try:
-
-            with self.db.transaction() as conn:
-
-                cursor = conn.cursor()
-
-                cursor.execute("""
-
-                    UPDATE news SET
-
-                        domain = '已拒绝',
-
-                        score = 0
-
-                    WHERE id = 
-
-                """, (news['news_id'],))
-
-            logger.debug(f"已标记拒绝: {news['news_id']}")
-
-        except Exception as e:
-
-            logger.error(f"标记拒绝失败: {e}")
+    # NOTE: _recheck_fallback_news 及相关 5 个方法已删除（2026-04-07）
+    # 删除原因：recheck/reject 分支存在 P0 崩溃（导入路径错误、SQL 引用不存在的 score 列）
+    # 且主流程不经过这些路径。如需重新处理 force_stored 数据，请使用补救采集或手动重新导入。
+    # 删除的方法：_recheck_fallback_news, _build_recheck_prompt, _parse_recheck_response,
+    #            _update_news_after_recheck_v2, _mark_news_as_rejected_v2
 
     def _print_summary(self):
 

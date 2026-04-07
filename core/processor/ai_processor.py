@@ -24,7 +24,7 @@ from core.utils.text_utils import parse_json_str
 def retry_on_failure(max_retries: int = 3, delay: float = 1.0, backoff: float = 2.0):
     """
     重试装饰器 - 指数退避重试
-    
+
     Args:
         max_retries: 最大重试次数
         delay: 初始延迟（秒）
@@ -35,11 +35,14 @@ def retry_on_failure(max_retries: int = 3, delay: float = 1.0, backoff: float = 
         def wrapper(*args, **kwargs):
             last_exception = None
             current_delay = delay
-            
+
             for attempt in range(max_retries + 1):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
+                    # TokenLimitExceeded 直接穿透，不重试
+                    if type(e).__name__ == "TokenLimitExceeded":
+                        raise
                     last_exception = e
                     if attempt < max_retries:
                         logging.warning(f"{func.__name__} 失败，{current_delay}秒后重试... ({attempt + 1}/{max_retries})")
@@ -47,7 +50,7 @@ def retry_on_failure(max_retries: int = 3, delay: float = 1.0, backoff: float = 
                         current_delay *= backoff
                     else:
                         logging.error(f"{func.__name__} 重试{max_retries}次后仍失败")
-            
+
             raise last_exception
         return wrapper
     return decorator
@@ -198,11 +201,16 @@ class BaseProvider:
     
     @retry_on_failure(max_retries=3, delay=1.0, backoff=2.0)
     def chat(self, messages: List[Dict[str, str]], **kwargs) -> str:
-        """发送聊天请求（带重试机制）"""
+        """发送聊天请求（带重试 + token 计数）"""
         client = self._get_client()
         if not client:
             raise RuntimeError(f"{self.provider}客户端未初始化")
-        
+
+        # 前置: 检查 token 阈值
+        from core.processor.token_counter import TokenCounter, TokenLimitExceeded
+        counter = TokenCounter.get_instance()
+        counter.check_and_raise(self.model)
+
         try:
             response = client.chat.completions.create(
                 model=kwargs.get('model', self.model),
@@ -210,7 +218,18 @@ class BaseProvider:
                 temperature=kwargs.get('temperature', 0.7),
                 max_tokens=kwargs.get('max_tokens', 2000)
             )
+
+            # 后置: 记录 token 用量（副作用，不改变返回值）
+            if hasattr(response, 'usage') and response.usage:
+                counter.record_usage(
+                    model=self.model,
+                    prompt_tokens=getattr(response.usage, 'prompt_tokens', 0) or 0,
+                    completion_tokens=getattr(response.usage, 'completion_tokens', 0) or 0,
+                )
+
             return response.choices[0].message.content
+        except TokenLimitExceeded:
+            raise
         except Exception as e:
             self.logger.error(f"{self.provider}请求失败: {e}")
             raise
@@ -241,28 +260,51 @@ class AIProcessor:
     
     def get_provider(self, purpose: str = "FILTER") -> Optional[BaseProvider]:
         """
-        获取指定用途的AI提供商
-        
+        获取指定用途的AI提供商（阈值感知：跳过已超 token 限额的 provider）
+
         Args:
             purpose: 用途，可选值: "ANALYSIS"(深度分析) / "FILTER"(快速筛选) / "BACKUP"(备用)
-        
+
         Returns:
             对应的提供商实例，如果不可用则尝试备用
         """
         purpose = purpose.upper()
-        
+
+        try:
+            from core.processor.token_counter import TokenCounter
+            counter = TokenCounter.get_instance()
+        except Exception:
+            counter = None
+
+        # 优先: 请求的 provider 可用且未超阈值
         if purpose in self._providers and self._providers[purpose].is_available():
-            return self._providers[purpose]
-        
-        if purpose != "BACKUP" and "BACKUP" in self._providers and self._providers["BACKUP"].is_available():
-            self.logger.warning(f"{purpose} Provider不可用，使用BACKUP Provider")
-            return self._providers["BACKUP"]
-        
+            provider = self._providers[purpose]
+            if counter is None or not counter.is_over_threshold(provider.model):
+                return provider
+            self.logger.warning(
+                f"{purpose} provider ({provider.model}) 今日 token 已超阈值，尝试切换"
+            )
+
+        # 备选: BACKUP provider 可用且未超阈值
+        if purpose != "BACKUP" and "BACKUP" in self._providers:
+            backup = self._providers["BACKUP"]
+            if backup.is_available() and (counter is None or not counter.is_over_threshold(backup.model)):
+                self.logger.warning(f"使用 BACKUP provider ({backup.model}) 替代 {purpose}")
+                return backup
+
+        # 兜底: 任何可用且未超阈值的 provider
         for p in self.PURPOSES:
-            if p in self._providers and self._providers[p].is_available():
-                self.logger.warning(f"{purpose} Provider不可用，使用{p} Provider")
-                return self._providers[p]
-        
+            if p in self._providers:
+                provider = self._providers[p]
+                if provider.is_available() and (counter is None or not counter.is_over_threshold(provider.model)):
+                    self.logger.warning(f"使用 {p} provider ({provider.model}) 作为兜底")
+                    return provider
+
+        # 最终兜底: 即使超阈值也返回请求的 provider
+        if purpose in self._providers and self._providers[purpose].is_available():
+            self.logger.error(f"所有 provider 今日 token 已超阈值，强制使用 {purpose}")
+            return self._providers[purpose]
+
         self.logger.error("没有可用的AI Provider")
         return None
     

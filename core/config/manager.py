@@ -269,10 +269,6 @@ class ConfigManager:
 
                     self._configs['ai_providers'] = core_config['ai_providers']
 
-                if 'knowledge' in core_config:
-
-                    self._configs['knowledge'] = core_config['knowledge']
-
                 if 'hotboard' in core_config:
 
                     self._configs['hotboard'] = core_config['hotboard']
@@ -287,6 +283,11 @@ class ConfigManager:
 
                     self._configs['ai_processing'] = core_config['ai_processing']
 
+                if 'token_limits' in core_config:
+
+                    self._configs['token_limits'] = core_config['token_limits']
+                    logger.info("加载 token 用量限额配置")
+
             except Exception as e:
 
                 logger.error(f"加载 core_config.yaml 失败: {e}")
@@ -298,8 +299,6 @@ class ConfigManager:
             legacy_files = [
 
                 ("ai_providers", "ai_providers.yaml"),
-
-                ("knowledge", "knowledge.yaml"),
 
                 ("hotboard", "hotboard.yaml")
 
@@ -527,12 +526,6 @@ class ConfigManager:
 
         return self.get("hotboard", {})
 
-    def get_knowledge_config(self) -> Dict[str, Any]:
-
-        """获取知识库配置"""
-
-        return self.get("knowledge", {})
-
     def get_env(self, key: str, default: Any = None) -> Any:
 
         """获取环境变量"""
@@ -649,9 +642,7 @@ if __name__ == "__main__":
 
         "env.deepseek_api_key",
 
-        "hotboard",
-
-        "knowledge"
+        "hotboard"
 
     ]
 

@@ -61,16 +61,24 @@ jobs:
           cp .env.example .env
           # === CI 环境使用官方 HuggingFace（非中国镜像）===
           echo "HF_ENDPOINT=https://huggingface.co" >> .env
-          # === 深度分析模型（非敏感信息直接写入）===
-          echo "AI_ANALYSIS_PROVIDER=deepseek" >> .env
-          echo "AI_ANALYSIS_MODEL=deepseek-reasoner" >> .env
+          # === 深度分析模型 ===
+          echo "AI_ANALYSIS_PROVIDER=${{ secrets.AI_ANALYSIS_PROVIDER || 'deepseek' }}" >> .env
+          echo "AI_ANALYSIS_MODEL=${{ secrets.AI_ANALYSIS_MODEL || 'deepseek-reasoner' }}" >> .env
           echo "AI_ANALYSIS_KEY=${{ secrets.AI_ANALYSIS_KEY }}" >> .env
-          echo "AI_ANALYSIS_BASE_URL=https://api.deepseek.com/v1" >> .env
-          # === 快速筛选模型（非敏感信息直接写入）===
-          echo "AI_FILTER_PROVIDER=doubao" >> .env
-          echo "AI_FILTER_MODEL=doubao-seed-2-0-mini-260215" >> .env
+          echo "AI_ANALYSIS_BASE_URL=${{ secrets.AI_ANALYSIS_BASE_URL || 'https://api.deepseek.com/v1' }}" >> .env
+          # === 快速筛选模型 ===
+          echo "AI_FILTER_PROVIDER=${{ secrets.AI_FILTER_PROVIDER || 'doubao' }}" >> .env
+          echo "AI_FILTER_MODEL=${{ secrets.AI_FILTER_MODEL || 'doubao-seed-2-0-lite-260215' }}" >> .env
           echo "AI_FILTER_KEY=${{ secrets.AI_FILTER_KEY }}" >> .env
-          echo "AI_FILTER_BASE_URL=https://ark.cn-beijing.volces.com/api/v3" >> .env
+          echo "AI_FILTER_BASE_URL=${{ secrets.AI_FILTER_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3' }}" >> .env
+          # === 备用模型（token 限额触发时自动切换）===
+          echo "AI_BACKUP_PROVIDER=${{ secrets.AI_BACKUP_PROVIDER || '' }}" >> .env
+          echo "AI_BACKUP_MODEL=${{ secrets.AI_BACKUP_MODEL || '' }}" >> .env
+          echo "AI_BACKUP_KEY=${{ secrets.AI_BACKUP_KEY || '' }}" >> .env
+          echo "AI_BACKUP_BASE_URL=${{ secrets.AI_BACKUP_BASE_URL || '' }}" >> .env
+          # === Token 用量限额（按天）===
+          echo "AI_TOKEN_LIMIT_DEFAULT=${{ secrets.AI_TOKEN_LIMIT_DEFAULT || '2000000' }}" >> .env
+          echo "AI_TOKEN_THRESHOLD_DEFAULT=${{ secrets.AI_TOKEN_THRESHOLD_DEFAULT || '0.9' }}" >> .env
           # === 邮件配置 ===
           echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env
           echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> .env
@@ -142,16 +150,24 @@ jobs:
           cp .env.example .env
           # === CI 环境使用官方 HuggingFace（非中国镜像）===
           echo "HF_ENDPOINT=https://huggingface.co" >> .env
-          # === 深度分析模型（非敏感信息直接写入）===
-          echo "AI_ANALYSIS_PROVIDER=deepseek" >> .env
-          echo "AI_ANALYSIS_MODEL=deepseek-reasoner" >> .env
+          # === 深度分析模型 ===
+          echo "AI_ANALYSIS_PROVIDER=${{ secrets.AI_ANALYSIS_PROVIDER || 'deepseek' }}" >> .env
+          echo "AI_ANALYSIS_MODEL=${{ secrets.AI_ANALYSIS_MODEL || 'deepseek-reasoner' }}" >> .env
           echo "AI_ANALYSIS_KEY=${{ secrets.AI_ANALYSIS_KEY }}" >> .env
-          echo "AI_ANALYSIS_BASE_URL=https://api.deepseek.com/v1" >> .env
-          # === 快速筛选模型（非敏感信息直接写入）===
-          echo "AI_FILTER_PROVIDER=doubao" >> .env
-          echo "AI_FILTER_MODEL=doubao-seed-2-0-mini-260215" >> .env
+          echo "AI_ANALYSIS_BASE_URL=${{ secrets.AI_ANALYSIS_BASE_URL || 'https://api.deepseek.com/v1' }}" >> .env
+          # === 快速筛选模型 ===
+          echo "AI_FILTER_PROVIDER=${{ secrets.AI_FILTER_PROVIDER || 'doubao' }}" >> .env
+          echo "AI_FILTER_MODEL=${{ secrets.AI_FILTER_MODEL || 'doubao-seed-2-0-lite-260215' }}" >> .env
           echo "AI_FILTER_KEY=${{ secrets.AI_FILTER_KEY }}" >> .env
-          echo "AI_FILTER_BASE_URL=https://ark.cn-beijing.volces.com/api/v3" >> .env
+          echo "AI_FILTER_BASE_URL=${{ secrets.AI_FILTER_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3' }}" >> .env
+          # === 备用模型 ===
+          echo "AI_BACKUP_PROVIDER=${{ secrets.AI_BACKUP_PROVIDER || '' }}" >> .env
+          echo "AI_BACKUP_MODEL=${{ secrets.AI_BACKUP_MODEL || '' }}" >> .env
+          echo "AI_BACKUP_KEY=${{ secrets.AI_BACKUP_KEY || '' }}" >> .env
+          echo "AI_BACKUP_BASE_URL=${{ secrets.AI_BACKUP_BASE_URL || '' }}" >> .env
+          # === Token 用量限额 ===
+          echo "AI_TOKEN_LIMIT_DEFAULT=${{ secrets.AI_TOKEN_LIMIT_DEFAULT || '2000000' }}" >> .env
+          echo "AI_TOKEN_THRESHOLD_DEFAULT=${{ secrets.AI_TOKEN_THRESHOLD_DEFAULT || '0.9' }}" >> .env
 
       - name: 执行新闻采集
         run: python task1_collector.py

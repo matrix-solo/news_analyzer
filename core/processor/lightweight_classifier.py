@@ -117,7 +117,13 @@ class LightweightClassifier:
 
     def __init__(self):
         self.domain_labels = self.DOMAIN_LABELS
-        self.confidence_threshold = 0.5
+        try:
+            from core.config.manager import get_config_manager
+            mgr = get_config_manager()
+            cfg = mgr.get('scoring')
+            self.confidence_threshold = float(cfg.get('lightweight_confidence', 0.5)) if cfg else 0.5
+        except Exception:
+            self.confidence_threshold = 0.5
 
     def classify_batch(self, news_list: List[Dict]) -> List[Dict[str, Any]]:
         """

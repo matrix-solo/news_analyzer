@@ -12,6 +12,32 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def save_original_news(media_name: str, title: str, content: str, url: str) -> Optional[str]:
+    """保存原始新闻到 JSON 文件（供爬虫模块使用）"""
+    import json
+    try:
+        fm = FileManager()
+        safe_media = fm.safe_filename(media_name or 'unknown')
+        news_dir = Path('data') / 'original_news' / safe_media
+        fm.ensure_dir(news_dir)
+
+        filename = fm.safe_filename(title or 'untitled', max_length=100) + '.json'
+        filepath = news_dir / filename
+
+        data = {
+            'media_name': media_name,
+            'title': title,
+            'content': content,
+            'url': url,
+            'saved_at': __import__('datetime').datetime.now().isoformat(),
+        }
+        fm.write_json(filepath, data)
+        return str(filepath)
+    except Exception as e:
+        logger.error(f"保存原始新闻失败: {e}")
+        return None
+
+
 class FileManager:
     """文件管理器"""
     

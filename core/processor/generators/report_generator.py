@@ -15,7 +15,7 @@ from pathlib import Path
 from core.processor.ai_processor import AIProcessor
 from core.processor.depth_analyzer import DepthAnalyzer
 
-# BGE-M3 引擎优先，降级到 TF-IDF
+# BGE-M3 引擎优先，不可用时跳过向量关联
 try:
     import faiss  # noqa: F401
     from sentence_transformers import SentenceTransformer  # noqa: F401
@@ -29,12 +29,8 @@ try:
     logger_pre = __import__('logging').getLogger("ReportGenerator")
     logger_pre.info("使用 BGE-M3 (FAISS)")
 except ImportError:
-    from core.processor.history_relation_engine import (
-        get_engine as _get_engine_impl,
-        format_related_section,
-        format_related_table,
-    )
     _USING_BGE3 = False
+    _get_engine_impl = None
 
 from core.processor.article_fetcher import ArticleFetcher, fetch_original_articles
 from core.processor.history_relation_engine_fulltext import (
@@ -45,6 +41,8 @@ from core.processor.history_relation_engine_fulltext import (
 
 
 def _get_engine(history_news):
+    if _get_engine_impl is None:
+        return None
     return _get_engine_impl(history_news)
 from core.processor.investment_advisor import InvestmentAdvisor
 from core.storage.database import get_db, NewsDatabase
@@ -835,6 +833,9 @@ class ReportGenerator:
             lines.append("")
             try:
                 engine = _get_engine(history_news)
+                if engine is None:
+                    lines.append("*BGE-M3 不可用，跳过向量关联*")
+                    raise RuntimeError("no engine")
                 _threshold = 0.53 if _USING_BGE3 else 0.1
                 related_history_records = engine.find_related_news(
                     rep_news, top_k=5, threshold=_threshold

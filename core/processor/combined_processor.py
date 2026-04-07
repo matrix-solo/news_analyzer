@@ -72,6 +72,7 @@ class CombinedProcessor:
 
     def __init__(self):
         self._provider = None
+        self._backup_provider = None  # BACKUP 提供者，FILTER 失败时兜底（合并自 ai_filter_agent.py）
         self._initialized = False
         self._log_dir = Path(__file__).parent.parent / "data" / "processor_logs"
         self._log_dir.mkdir(parents=True, exist_ok=True)
@@ -95,6 +96,7 @@ class CombinedProcessor:
             from core.processor.ai_processor import AIProcessor
             ai = AIProcessor()
             self._provider = ai.get_provider("FILTER")
+            self._backup_provider = ai.get_provider("BACKUP")
         except Exception as e:
             logger.warning(f"CombinedProcessor AI provider 初始化失败: {e}")
         self._initialized = True
@@ -209,9 +211,13 @@ class CombinedProcessor:
                 result = self._parse_response(raw, news)
                 self._on_llm_success()
             except Exception as e:
-                logger.error(f"CombinedProcessor LLM 调用失败: {e}")
-                self._on_llm_failure(e)
-                result = self._default_result(news)
+                # TokenLimitExceeded 时跳过熔断器计数，直接走 BACKUP
+                if type(e).__name__ == "TokenLimitExceeded":
+                    logger.warning(f"主 provider token 限额触发: {e}")
+                else:
+                    logger.error(f"CombinedProcessor LLM 调用失败: {e}")
+                    self._on_llm_failure(e)
+                result = self._try_backup(prompt, news)
         else:
             logger.warning("CombinedProcessor: 无可用 AI provider，使用默认值")
             result = self._default_result(news)
@@ -243,8 +249,31 @@ class CombinedProcessor:
             return {}
         return result
 
+    def _try_backup(self, prompt: str, news: Dict[str, Any]) -> Dict[str, Any]:
+        """尝试使用 BACKUP 提供者（合并自 ai_filter_agent.py 的重试模式）"""
+        if not self._backup_provider:
+            return self._default_result(news)
+        try:
+            logger.info("尝试 BACKUP 提供者...")
+            raw = self._backup_provider.chat(
+                [
+                    {"role": "system", "content": _COMBINED_SYSTEM},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=1500
+            )
+            result = self._parse_response(raw, news)
+            self._on_llm_success()
+            logger.info("BACKUP 提供者调用成功")
+            return result
+        except Exception as e:
+            logger.error(f"BACKUP 提供者也失败: {e}")
+            return self._default_result(news)
+
     def _default_result(self, news: Dict[str, Any]) -> Dict[str, Any]:
         """当 AI 不可用时的默认填充"""
+        from core.utils.defaults import DefaultValues
         title = news.get("title", "")
         return {
             "translation": title,
@@ -262,8 +291,8 @@ class CombinedProcessor:
             "domain": "其他",
             "keywords": [],
             "scoring": {
-                "influence_score": 5.0,
-                "value_score": 5.0
+                "influence_score": DefaultValues.SCORE_DEFAULT,
+                "value_score": DefaultValues.SCORE_DEFAULT
             }
         }
 
@@ -325,9 +354,32 @@ class CombinedProcessor:
             results = self._parse_batch_response(raw, len(news_list))
             self._on_llm_success()
         except Exception as e:
-            logger.error(f"CombinedProcessor 批量 LLM 调用失败: {e}")
-            self._on_llm_failure(e)
-            results = [None] * len(news_list)
+            # TokenLimitExceeded 时跳过熔断器计数
+            if type(e).__name__ == "TokenLimitExceeded":
+                logger.warning(f"批量处理主 provider token 限额触发: {e}")
+            else:
+                logger.error(f"CombinedProcessor 批量 LLM 调用失败: {e}")
+                self._on_llm_failure(e)
+            # 尝试 BACKUP 提供者
+            if self._backup_provider:
+                try:
+                    logger.info("批量处理尝试 BACKUP 提供者...")
+                    raw = self._backup_provider.chat(
+                        [
+                            {"role": "system", "content": _COMBINED_SYSTEM + "\n\n注意：你需要处理多条新闻，请返回 JSON 数组，每条新闻对应一个结果对象。"},
+                            {"role": "user", "content": batch_prompt}
+                        ],
+                        temperature=0.3,
+                        max_tokens=4000
+                    )
+                    results = self._parse_batch_response(raw, len(news_list))
+                    self._on_llm_success()
+                    logger.info("BACKUP 批量处理成功")
+                except Exception as e2:
+                    logger.error(f"BACKUP 批量处理也失败: {e2}")
+                    results = [None] * len(news_list)
+            else:
+                results = [None] * len(news_list)
 
         output = []
         for i, news in enumerate(news_list):
