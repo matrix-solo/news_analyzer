@@ -4,7 +4,7 @@
 
 每日自动完成：多信源采集 → AI 解析评分 → 简报 + 深度报告 → 邮件推送。
 
-**最后更新**：2026-04-07 | **架构**：单一数据路径（SQLite） | **运行环境**：GitHub Actions + 本地 Windows/Linux
+**最后更新**：2026-04-07 | **架构**：单一数据路径（SQLite）| **配置驱动评分** | **运行环境**：GitHub Actions + 本地 Windows/Linux
 
 ---
 
@@ -140,13 +140,23 @@ core/
 
 ### 评分体系
 
-| 字段 | 含义 | 来源 |
-|------|------|------|
-| `source_score` | 信源权威性（Tier 1/2/3 映射） | 规则 |
-| `influence_score` | 事件影响力 | LLM |
-| `value_score` | 决策价值 | LLM |
-| `heat_score` | 热榜向量匹配热度 | BGE-M3 |
-| `final_score` | 综合得分 | `source×0.25 + influence×0.25 + value×0.25 + heat×0.25` |
+所有评分参数通过 `core_config.yaml → scoring` 段集中配置，修改配置即可调整策略，无需改代码。
+
+| 字段 | 含义 | 来源 | 范围 |
+|------|------|------|------|
+| `source_score` | 信源权威性（Tier 1/2/3 映射） | sources.yaml Tier → 配置化映射 | 0-10 |
+| `influence_score` | 事件影响力（波及范围、社会影响） | LLM 评估 | 0-10 |
+| `value_score` | 决策价值（投资/政策/技术参考意义） | LLM 评估 | 0-10 |
+| `heat_score` | 热榜共振度（多平台热榜向量匹配） | BGE-M3 + FAISS | 0-10 |
+| `final_score` | 综合得分 | `(source×w1 + influence×w2 + value×w3 + heat×w4) / 10 × 100` | 0-100 |
+
+**默认权重**：`source=0.25, influence=0.25, value=0.25, heat=0.25`（等权，可调）
+
+**信源 Tier 分值**：Tier 1 = 9.5（顶级通讯社）、Tier 2 = 7.5（主流媒体）、Tier 3 = 5.5（垂直媒体）、默认 5.0
+
+**热度评分规则**：基于 BGE-M3 向量匹配多平台热榜的命中数量和相似度，详见 `core_config.yaml`。
+
+**数据质量门控**：`accuracy_score` 评估 AI 处理结果完整性（翻译/摘要/5W1H/评分），低于阈值的数据标记为 `force_stored` 并降权处理。
 
 ---
 
@@ -178,7 +188,7 @@ news_analyzer/
 │   │   ├── content_parser.py           RuleBasedParser + EntityExtractor
 │   │   ├── field_normalizer.py         字段标准化
 │   │   ├── lightweight_classifier.py   轻量级领域分类
-│   │   ├── heat_processor.py           BGE-M3 热度向量匹配
+│   │   ├── heat_processor.py           BGE-M3 热度向量匹配（配置驱动）
 │   │   ├── data_validator.py           校验 + AI 补救 + 默认值填充
 │   │   ├── history_relation_engine_bge3.py  BGE-M3 历史关联引擎（索引A）
 │   │   ├── history_relation_engine_fulltext.py  BGE-M3 全文关联引擎（索引B）
@@ -201,7 +211,7 @@ news_analyzer/
 │       ├── task_lock.py            跨平台文件锁
 │       ├── heartbeat.py            心跳监控
 │       ├── incremental_tracker.py  增量采集状态持久化
-│       └── source_scorer.py        信源评分映射
+│       └── source_scorer.py        信源评分映射 + 统一评分计算（配置驱动）
 │
 ├── .github/workflows/
 │   ├── collect.yml              采集 + 报告（07:00）+ 补充采集（15:00/23:00）
@@ -242,6 +252,31 @@ python -c "from core.storage.database import get_db; db=get_db(); print(db.get_s
 ---
 
 ## 配置说明
+
+### `core_config.yaml` 评分与运行配置
+
+```yaml
+# 评分权重（修改后立即生效，无需改代码）
+scoring:
+  weights:
+    source: 0.25       # 信源权威性
+    influence: 0.25    # 事件影响力
+    value: 0.25        # 决策价值
+    heat: 0.25         # 热榜热度
+  tier_scores:
+    1: 9.5             # 核心骨架
+    2: 7.5             # 区域支柱
+    3: 5.5             # 专业补充
+  heat:
+    similarity_threshold: 0.85  # 热榜匹配阈值
+  defaults:
+    score: 5.0
+
+# AI 处理参数
+ai_processing:
+  batch_size: 4
+  max_retry: 1
+```
 
 ### `.env` 关键变量
 
