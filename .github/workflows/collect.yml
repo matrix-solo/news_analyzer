@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data
-          key: news-analyzer-data-${{ hashFiles('requirements.txt') }}
+          key: news-analyzer-data-v1
           restore-keys: news-analyzer-data-
 
       - name: 恢复 HuggingFace 模型缓存
@@ -116,7 +116,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data
-          key: news-analyzer-data-${{ hashFiles('requirements.txt') }}
+          key: news-analyzer-data-v1
           restore-keys: news-analyzer-data-
 
       - name: 恢复 HuggingFace 模型缓存
@@ -125,6 +125,14 @@ jobs:
           path: ~/.cache/huggingface
           key: huggingface-models-${{ runner.os }}
           restore-keys: huggingface-models-
+
+      - name: 安装中文字体
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-wqy-microhei fonts-noto-cjk-extra 2>/dev/null || true
+          fc-cache -fv 2>/dev/null || true
+          echo "字体安装完成"
+          fc-list :lang=zh | head -5 || echo "未检测到中文字体"
 
       - name: 安装依赖
         run: pip install -r requirements.txt
