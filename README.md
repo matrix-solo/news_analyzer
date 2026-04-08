@@ -4,7 +4,7 @@
 
 每日自动完成：多信源采集 → AI 解析评分 → 简报 + 深度报告 → 邮件推送。
 
-**最后更新**：2026-04-08 | **架构**：单一数据路径（SQLite）| **配置驱动评分** | **Token 限额自动切换** | **运行环境**：GitHub Actions + 本地 Windows/Linux
+**最后更新**：2026-04-08 | **架构**：单一数据路径（SQLite）| **配置驱动评分** | **Token 限额自动切换** | **5W1H 标准化 + 质量门控** | **运行环境**：GitHub Actions + 本地 Windows/Linux
 
 ---
 
@@ -153,13 +153,13 @@ core/
 
 所有评分参数通过 `core_config.yaml → scoring` 段集中配置，修改配置即可调整策略，无需改代码。
 
-| 字段 | 含义 | 来源 | 范围 |
-|------|------|------|------|
-| `source_score` | 信源权威性（Tier 1/2/3 映射） | sources.yaml Tier → 配置化映射 | 0-10 |
-| `influence_score` | 事件影响力（波及范围、社会影响） | LLM 评估 | 0-10 |
-| `value_score` | 决策价值（投资/政策/技术参考意义） | LLM 评估 | 0-10 |
-| `heat_score` | 热榜共振度（多平台热榜向量匹配） | BGE-M3 + FAISS | 0-10 |
-| `final_score` | 综合得分 | `(source×w1 + influence×w2 + value×w3 + heat×w4) / 10 × 100` | 0-100 |
+| 字段 | 含义 | 来源 | 存储范围 | 报告显示 |
+|------|------|------|----------|----------|
+| `source_score` | 信源权威性（Tier 1/2/3 映射） | sources.yaml Tier → 配置化映射 | 0-10 | 百分制 |
+| `influence_score` | 事件影响力（波及范围、社会影响） | LLM 评估 | 0-10 | 百分制 |
+| `value_score` | 决策价值（投资/政策/技术参考意义） | LLM 评估 | 0-10 | 百分制 |
+| `heat_score` | 热榜共振度（多平台热榜向量匹配） | BGE-M3 + FAISS | 0-10 | 百分制 |
+| `final_score` | 综合得分 | `(source×w1 + influence×w2 + value×w3 + heat×w4) / 10 × 100` | 0-100 | 百分制 |
 
 **默认权重**：`source=0.25, influence=0.25, value=0.25, heat=0.25`（等权，可调）
 
@@ -168,6 +168,8 @@ core/
 **热度评分规则**：基于 BGE-M3 向量匹配多平台热榜的命中数量和相似度，详见 `core_config.yaml`。
 
 **数据质量门控**：`accuracy_score` 评估 AI 处理结果完整性（翻译/摘要/5W1H/评分），低于阈值的数据标记为 `force_stored` 并降权处理。
+
+**5W1H 标准化**：所有 5W1H 字段通过 `normalize_5w1h()` 统一处理，将"无"、"未知"、推测性前缀等无效值统一映射为"暂无信息"。重点新闻筛选时，若 6 个字段中有效信息少于 3 个则降权处理。
 
 ---
 
@@ -223,7 +225,8 @@ news_analyzer/
 │       ├── task_lock.py            跨平台文件锁
 │       ├── heartbeat.py            心跳监控
 │       ├── incremental_tracker.py  增量采集状态持久化
-│       └── source_scorer.py        信源评分映射 + 统一评分计算（配置驱动）
+│       ├── source_scorer.py        信源评分映射 + 统一评分计算（配置驱动）
+│       └── defaults.py             统一默认值 + normalize_5w1h() 标准化
 │
 ├── .github/workflows/
 │   ├── collect.yml              采集 + 报告（07:00）+ 补充采集（15:00/23:00）
@@ -412,7 +415,7 @@ EMAIL_TO            收件人邮箱（多个用逗号分隔）
 ### 数据持久化
 
 - **数据库**：通过 `actions/cache` 缓存 `data/` 目录，历史数据在每次运行间保持
-- **报告**：通过 `actions/upload-artifact` 在工作流间传递
+- **报告**：通过 `actions/upload-artifact` 保留 30 天；每日报告自动 git commit 到 `reports/archive/` 目录
 - **BGE-M3 模型**：首次运行下载后缓存，后续运行直接使用
 
 ---

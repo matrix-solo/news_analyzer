@@ -166,9 +166,15 @@ class Task2DailyReporter:
             logger.warning("邮件未配置，跳过通知发送")
 
     def _select_top_n(self, news_list: List[Dict], n: int) -> List[Dict]:
-        """按 final_score 选择TOP N"""
+        """按 final_score 选择TOP N，5W1H 严重缺失时降权"""
+        from core.processor.generators.report_generator import ReportGenerator
+
         def sort_key(x):
-            return x.get('final_score', x.get('influence_score', 0))
+            score = x.get('final_score', x.get('influence_score', 0))
+            # 5W1H 全部无效时降权 50%
+            if not ReportGenerator._has_minimal_5w1h(x, min_valid=1):
+                score *= 0.5
+            return score
 
         return sorted(news_list, key=sort_key, reverse=True)[:n]
 

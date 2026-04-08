@@ -233,7 +233,7 @@ class DataValidator:
         """格式化当前值用于 prompt"""
         lines = []
         for field in failed_fields:
-            lines.append(f'  {field}: {current_values.get(field, "无")}')
+            lines.append(f'  {field}: {current_values.get(field, DefaultValues.TEXT_UNKNOWN)}')
         return '\n'.join(lines)
 
     def _parse_remediation_response(self, response: str, original_result: Dict) -> Optional[Dict]:
@@ -273,13 +273,12 @@ class DataValidator:
                 result['analysis'] = {}
 
             for field in DefaultValues.W5H1_FIELDS:
-
-                if field not in result['analysis'] or not result['analysis'][field]:
-
-                    default_val = DefaultValues.get_text_default(field)
-                    result['analysis'][field] = default_val
-
-                    default_values[f'analysis.{field}'] = default_val
+                from core.utils.defaults import normalize_5w1h
+                raw = result['analysis'].get(field, '')
+                normalized = normalize_5w1h(raw)
+                if normalized != raw:
+                    result['analysis'][field] = normalized
+                    default_values[f'analysis.{field}'] = normalized
 
         if validation_results.get('scoring', {}).get('status') == 'error':
 

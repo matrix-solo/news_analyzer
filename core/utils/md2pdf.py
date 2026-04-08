@@ -280,15 +280,26 @@ def create_pdf_from_md(md_content: str, output_path: Path) -> bool:
                             t.setStyle(TableStyle([
                                 ('FONTNAME', (0, 0), (-1, -1), font_name),
                                 ('FONTSIZE', (0, 0), (-1, -1), 9),
-                                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f5f5f5')),
-                                ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+                                # 表头：深灰背景 + 白字
+                                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3d3d3d')),
+                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                                # 数据行文字色
+                                ('TEXTCOLOR', (0, 1), (-1, -1), colors.HexColor('#333333')),
+                                # 数据行交替背景（斑马纹）
+                                ('ROWBACKGROUNDS', (0, 1), (-1, -1),
+                                 [colors.white, colors.HexColor('#f8f8f8')]),
+                                # 对齐
                                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dddddd')),
                                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                                ('LEFTPADDING', (0, 0), (-1, -1), 8),
-                                ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-                                ('TOPPADDING', (0, 0), (-1, -1), 6),
-                                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                                # 仅水平线，去除垂直网格
+                                ('LINEBELOW', (0, 0), (-1, 0), 1.2, colors.HexColor('#3d3d3d')),
+                                ('LINEBELOW', (0, 1), (-1, -2), 0.3, colors.HexColor('#e0e0e0')),
+                                ('LINEBELOW', (0, -1), (-1, -1), 0.8, colors.HexColor('#cccccc')),
+                                # 内边距
+                                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                                ('TOPPADDING', (0, 0), (-1, -1), 7),
+                                ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
                             ]))
                             story.append(t)
                             story.append(Spacer(1, 12))

@@ -275,7 +275,13 @@ class ReportGenerator:
             if not domain_news:
                 continue
 
-            domain_news.sort(key=lambda x: x.get('final_score') or 0, reverse=True)
+            domain_news.sort(
+                key=lambda x: (
+                    x.get('final_score') or 0,
+                    1 if ReportGenerator._has_minimal_5w1h(x) else 0,
+                ),
+                reverse=True,
+            )
 
             clusters = self.ai_processor.cluster_events(domain_news)
 
@@ -440,6 +446,20 @@ class ReportGenerator:
         logger.info("聚类新闻原文获取完成")
         logger.info("=" * 50)
         return clusters
+
+    @staticmethod
+    def _has_minimal_5w1h(news: Dict, min_valid: int = 3) -> bool:
+        """判断新闻是否具有足够的 5W1H 信息以作为重点事件。
+        6 个字段中至少 min_valid 个有效（非'暂无信息'且非空）。
+        """
+        from core.utils.defaults import normalize_5w1h
+        fields = ['who', 'what', 'when', 'where', 'why', 'how']
+        valid = 0
+        for f in fields:
+            val = normalize_5w1h(news.get(f, ''))
+            if val != '暂无信息':
+                valid += 1
+        return valid >= min_valid
 
     def _build_domain_context(
         self,
@@ -649,13 +669,16 @@ class ReportGenerator:
             )
             source = rep_news.get("source_name", rep_news.get("source", "未知"))
             score = rep_news.get("final_score") or 0.0
-            influence = rep_news.get("influence_score") or 0.0
-            heat = rep_news.get("heat_score") or 0.0
+            # influence/heat 原始范围 0-10，显示时 ×10 转为百分制
+            influence = (rep_news.get("influence_score") or 0.0) * 10
+            heat = (rep_news.get("heat_score") or 0.0) * 10
 
             lines.append(
-                f"| {idx} | {title} | {source} | {score} | {influence} | {heat} |"
+                f"| {idx} | {title} | {source} | {score:.0f} | {influence:.0f} | {heat:.0f} |"
             )
 
+        lines.append("")
+        lines.append("*评分均为百分制，越高代表该维度越突出。*")
         lines.append("")
         lines.append("以下为各重点事件的详细分析：")
         lines.append("")
@@ -749,7 +772,7 @@ class ReportGenerator:
         lines.append(f"- **来源**：{source}")
         lines.append(f"- **摘要**：{summary}")
         if url:
-            lines.append(f"- **原文链接**：[点击查看]({url})")
+            lines.append(f"- **原文链接**: {url}")
         lines.append(f"- **领域**：{domain}")
         if core_tags:
             lines.append(f"- **标签**：{', '.join(core_tags)}")
@@ -797,8 +820,7 @@ class ReportGenerator:
         lines.append(f"- **标题**：{title}")
         lines.append(f"- **来源**：{source}")
         if url:
-            lines.append(f"- **原文链接**：[点击查看]({url})")
-        lines.append(f"- **领域**：{domain}")
+            lines.append(f"- **原文链接**: {url}")
         if core_tags:
             lines.append(f"- **标签**：{', '.join(core_tags) if isinstance(core_tags, list) else core_tags}")
 

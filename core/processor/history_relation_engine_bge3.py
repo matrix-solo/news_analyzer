@@ -253,6 +253,8 @@ class BGE3HistoryRelationEngine:
         if self._index.size == 0:
             return []
 
+        target_news_id = str(target_news.get('news_id', ''))
+
         # 编码当前新闻（优先 DB 向量，其次在线编码标题+摘要）
         query_vec = _vec_from_news(target_news)
         if query_vec is None:
@@ -272,6 +274,9 @@ class BGE3HistoryRelationEngine:
 
         results: List[RelatedRecord] = []
         for sim, news_id, meta in candidates:
+            # 排除当前新闻自身
+            if str(news_id) == target_news_id:
+                continue
             if sim < threshold:
                 continue
             hist_title   = meta['title']

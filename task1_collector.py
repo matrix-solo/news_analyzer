@@ -988,19 +988,16 @@ class Task1NewsCollector:
             from core.utils.source_scorer import calc_final_score
             news['final_score'] = calc_final_score(sc, si, v, h)
 
-        # P-12 修复：使用统一文本默认值
-        if not news.get('who'):
-            news['who'] = DefaultValues.TEXT_UNKNOWN
-        if not news.get('what'):
-            news['what'] = DefaultValues.TEXT_UNKNOWN
-        if not news.get('when_time'):
-            news['when_time'] = news.get('pub_date', DefaultValues.TEXT_UNKNOWN)
-        if not news.get('where_place'):
-            news['where_place'] = DefaultValues.TEXT_UNKNOWN
-        if not news.get('why'):
-            news['why'] = DefaultValues.TEXT_UNKNOWN
-        if not news.get('how'):
-            news['how'] = DefaultValues.TEXT_UNKNOWN
+        # P-12 修复：使用统一文本默认值 + normalize
+        from core.utils.defaults import normalize_5w1h
+        news['who'] = normalize_5w1h(news.get('who'))
+        news['what'] = normalize_5w1h(news.get('what'))
+        news['when_time'] = normalize_5w1h(
+            news.get('when_time') or news.get('pub_date')
+        )
+        news['where_place'] = normalize_5w1h(news.get('where_place'))
+        news['why'] = normalize_5w1h(news.get('why'))
+        news['how'] = normalize_5w1h(news.get('how'))
 
     def _reprocess_pending_news(self):
         """
@@ -1268,9 +1265,11 @@ class Task1NewsCollector:
 
             # 策略1:扩大回溯时间到RSS滚动限制
 
-            rss_rollover_hours = config.rss_rollover_hours
+            rss_rollover_hours = getattr(config, 'rss_rollover_hours', 24)  # 默认24小时
 
-            补救截止时间 = datetime.now() - timedelta(hours=rss_rollover_hours)
+            # 修复：使用UTC时间确保一致性（与RSS源的pub_date时区对齐）
+            from datetime import timezone
+            补救截止时间 = datetime.now(timezone.utc) - timedelta(hours=rss_rollover_hours)
 
             logger.info(f"🔧 补救采集 [{source.name}]: 扩大回溯至 {rss_rollover_hours}小时")
 
@@ -1288,9 +1287,14 @@ class Task1NewsCollector:
 
             for item in feed.items[:max_items]:
 
-                if item.pub_date and item.pub_date.replace(tzinfo=None) < 补救截止时间:
-
-                    continue
+                # 修复：统一转换为UTC进行比较
+                if item.pub_date:
+                    item_pub_date_utc = item.pub_date
+                    if item_pub_date_utc.tzinfo is None:
+                        # 无时区信息，假设为UTC
+                        item_pub_date_utc = item_pub_date_utc.replace(tzinfo=timezone.utc)
+                    if item_pub_date_utc < 补救截止时间:
+                        continue
 
                 news = {
 

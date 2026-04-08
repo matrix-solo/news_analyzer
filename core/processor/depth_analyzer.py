@@ -251,18 +251,19 @@ class DepthAnalyzer:
 
     def format_for_report(self, analysis: DepthAnalysis) -> list[str]:
         """格式化为报告 Markdown 行列表"""
+        from core.utils.defaults import normalize_5w1h
         lines = []
 
         lines.append("### 5W1H要素")
         lines.append("")
         lines.append("| 要素 | 内容 |")
         lines.append("|------|------|")
-        lines.append(f"| 何时 | {analysis.when or '无'} |")
-        lines.append(f"| 何地 | {analysis.where or '无'} |")
-        lines.append(f"| 何人 | {analysis.who or '无'} |")
-        lines.append(f"| 何事 | {analysis.what or '无'} |")
-        lines.append(f"| 为何 | {analysis.why or '无'} |")
-        lines.append(f"| 如何 | {analysis.how or '无'} |")
+        lines.append(f"| 何时 | {normalize_5w1h(analysis.when)} |")
+        lines.append(f"| 何地 | {normalize_5w1h(analysis.where)} |")
+        lines.append(f"| 何人 | {normalize_5w1h(analysis.who)} |")
+        lines.append(f"| 何事 | {normalize_5w1h(analysis.what)} |")
+        lines.append(f"| 为何 | {normalize_5w1h(analysis.why)} |")
+        lines.append(f"| 如何 | {normalize_5w1h(analysis.how)} |")
         lines.append("")
 
         if analysis.summary:
