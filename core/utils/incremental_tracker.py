@@ -95,6 +95,11 @@ class IncrementalTracker:
         }
         self._save_state()
 
+    def get_last_pub_date(self, source_name: str) -> str:
+        """获取信源上次的 last_pub_date（无新新闻时保留原值）"""
+        src = self._state.get(source_name, {})
+        return src.get("last_pub_date", "")
+
 
 _tracker_instance = None
 

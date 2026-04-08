@@ -86,6 +86,16 @@ class RSSFeed:
             'used_backup': self.used_backup
         }
 
+    def get_earliest_pub_date(self) -> Optional[str]:
+        """返回 feed 中最早的 pub_date（ISO 字符串），无则返回 None"""
+        dates = [item.pub_date for item in self.items if item.pub_date]
+        return min(dates).isoformat() if dates else None
+
+    def get_latest_pub_date(self) -> Optional[str]:
+        """返回 feed 中最新的 pub_date（ISO 字符串），无则返回 None"""
+        dates = [item.pub_date for item in self.items if item.pub_date]
+        return max(dates).isoformat() if dates else None
+
 
 class RSSParser:
     """RSS解析器"""

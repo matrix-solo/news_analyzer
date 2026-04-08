@@ -824,8 +824,12 @@ class Task1NewsCollector:
 
                         source_news_count += 1
 
-                    if self.enable_incremental and latest_pub_date:
-                        latest_pub_date_str = latest_pub_date.isoformat() if hasattr(latest_pub_date, 'isoformat') else str(latest_pub_date)
+                    if self.enable_incremental:
+                        if latest_pub_date:
+                            latest_pub_date_str = latest_pub_date.isoformat() if hasattr(latest_pub_date, 'isoformat') else str(latest_pub_date)
+                        else:
+                            # 无新新闻时保留原有 last_pub_date，仅更新 last_run
+                            latest_pub_date_str = self.incremental_tracker.get_last_pub_date(source.name)
                         self.incremental_tracker.update_state(source.name, latest_pub_date_str, source_news_count)
 
                     # 遗漏检测(返回检测结果)
@@ -1221,7 +1225,7 @@ class Task1NewsCollector:
 
         except Exception as e:
 
-            logger.debug(f"遗漏检测失败 [{source_name}]: {e}")
+            logger.warning(f"遗漏检测失败 [{source_name}]: {e}")
 
             return default_result
 
