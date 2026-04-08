@@ -216,6 +216,10 @@ class CombinedProcessor:
         """
         self._init()
 
+        # 熔断器检查：LLM 服务不可用时直接返回默认值
+        if self._circuit_open:
+            return self._default_result(news), 0.0
+
         prompt = self._build_combined_prompt(news)
 
         if self._provider:

@@ -464,48 +464,52 @@ class Task1NewsCollector:
 
             if failed_news and self.ai_max_retry > 0:
 
-                logger.info(f"🔄 重试阶段: 对 {len(failed_news)} 条失败新闻进行单条重试...")
+                # 熔断器已断开时跳过重试（LLM 服务不可用）
+                if self.combined_processor.is_circuit_open():
+                    logger.warning(f"熔断器已断开，跳过 {len(failed_news)} 条失败新闻的重试")
+                else:
+                    logger.info(f"🔄 重试阶段: 对 {len(failed_news)} 条失败新闻进行单条重试...")
 
-                retry_success = 0
+                    retry_success = 0
 
-                final_failed = []
+                    final_failed = []
 
-                for news in failed_news:
+                    for news in failed_news:
 
-                    try:
+                        try:
 
-                        result, accuracy = self.combined_processor.process_news(news)
+                            result, accuracy = self.combined_processor.process_news(news)
 
-                        if result and result.get('translation'):
-                            news['combined_result'] = result
-                            news['accuracy_score'] = accuracy
-                            processed_news.append(news)
+                            if result and result.get('translation'):
+                                news['combined_result'] = result
+                                news['accuracy_score'] = accuracy
+                                processed_news.append(news)
 
-                            retry_success += 1
+                                retry_success += 1
 
-                            self.stats['ai_retry_success'] += 1
+                                self.stats['ai_retry_success'] += 1
 
-                        else:
+                            else:
+
+                                final_failed.append(news)
+
+                                self.stats['ai_retry_failed'] += 1
+
+                        except Exception as e:
+
+                            logger.debug(f"重试失败: {news.get('title', '')[:40]}... - {e}")
 
                             final_failed.append(news)
 
                             self.stats['ai_retry_failed'] += 1
 
-                    except Exception as e:
+                    logger.info(f"重试完成: {retry_success} 成功, {len(final_failed)} 最终失败")
 
-                        logger.debug(f"重试失败: {news.get('title', '')[:40]}... - {e}")
+                    if final_failed:
 
-                        final_failed.append(news)
+                        logger.warning(f"⚠️  最终失败 {len(final_failed)} 条新闻（LLM 无法处理）")
 
-                        self.stats['ai_retry_failed'] += 1
-
-                logger.info(f"重试完成: {retry_success} 成功, {len(final_failed)} 最终失败")
-
-                if final_failed:
-
-                    logger.warning(f"⚠️  最终失败 {len(final_failed)} 条新闻（LLM 无法处理）")
-
-                    self.stats['final_failed'] = len(final_failed)
+                        self.stats['final_failed'] = len(final_failed)
 
                     for news in final_failed:
 
