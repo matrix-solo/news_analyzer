@@ -157,7 +157,7 @@ class Task2DailyReporter:
 """
 
         if is_email_configured():
-            success = send_email_with_attachments(subject, body, recipients=[])
+            success = send_email_with_attachments(subject, body)
             if success:
                 logger.info("✅ 无新闻通知邮件已发送")
             else:

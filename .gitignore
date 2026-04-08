@@ -11,7 +11,8 @@ credentials/
 data/
 logs/
 logs_*/
-reports/
+reports/*
+!reports/archive/
 *.db
 *.sqlite
 *.sqlite3

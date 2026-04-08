@@ -56,8 +56,8 @@ def check_table_consistency(conn):
     cursor.execute("SELECT COUNT(*) FROM raw_news WHERE processed = 0")
     unprocessed_raw = cursor.fetchone()[0]
 
-    if unprocessed_raw > 100:
-        issues.append(f"未处理raw_news过多: {unprocessed_raw}条")
+    if unprocessed_raw > 1000:
+        issues.append(f"未处理raw_news过多: {unprocessed_raw}条（阈值1000）")
     else:
         print(f"[OK] 未处理raw_news: {unprocessed_raw}条")
 

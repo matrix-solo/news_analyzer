@@ -22,7 +22,7 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
-PROXY_URL = os.getenv('RSS_HTTP_PROXY', 'http://127.0.0.1:7890')
+PROXY_URL = os.getenv('RSS_HTTP_PROXY', '')
 
 CONTENT_SELECTORS = [
     'article',
@@ -163,7 +163,7 @@ class ArticleFetcher:
 
     def _fetch_html(self, url: str) -> Optional[str]:
         """
-        使用代理获取网页HTML
+        获取网页HTML（可选代理）
 
         Args:
             url: 目标URL
@@ -171,10 +171,7 @@ class ArticleFetcher:
         Returns:
             HTML文本，失败返回None
         """
-        proxies = {
-            'http': PROXY_URL,
-            'https': PROXY_URL,
-        }
+        proxies = {'http': PROXY_URL, 'https': PROXY_URL} if PROXY_URL else None
 
         try:
             response = self.session.get(url, proxies=proxies, timeout=self.timeout)
