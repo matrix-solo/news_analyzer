@@ -1,11 +1,11 @@
 # 新闻采集（每天2次补充）+ 早上采集+报告
 # 触发时间使用 UTC，对应北京时间需 +8 小时
-# 北京时间 08:00 = UTC 00:00 | 北京时间 15:00 = UTC 07:00 | 北京时间 23:00 = UTC 15:00
+# 北京时间 07:00 = UTC 23:00 | 北京时间 15:00 = UTC 07:00 | 北京时间 23:00 = UTC 15:00
 name: 新闻采集
 
 on:
   schedule:
-    - cron: '0 0 * * *'    # UTC 00:00 = 北京时间 08:00 - 采集+报告（主任务）
+    - cron: '0 23 * * *'   # UTC 23:00 = 北京时间 07:00 - 采集+报告（主任务）
     - cron: '0 7 * * *'    # UTC 07:00 = 北京时间 15:00 - 补充采集
     - cron: '0 15 * * *'   # UTC 15:00 = 北京时间 23:00 - 补充采集
   workflow_dispatch:  # 支持手动触发
@@ -14,11 +14,11 @@ permissions:
   contents: write  # 报告归档需要 push 权限
 
 jobs:
-  # 北京时间 08:00（UTC 00:00）：采集 + 生成报告（主任务）
+  # 北京时间 07:00（UTC 23:00）：采集 + 生成报告（主任务）
   # 手动触发时也执行此任务
   collect-and-report:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 0 * * *'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 23 * * *'
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
