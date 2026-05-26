@@ -61,7 +61,7 @@ jobs:
           conn = sqlite3.connect('data/news.db')
           n = conn.execute('DELETE FROM raw_news WHERE processed = 0').rowcount
           conn.commit()
-          print('已清理 %%d 条未处理 raw_news' %% n)
+          print('已清理 %d 条未处理 raw_news' % n)
           conn.close()
           "
 
@@ -185,7 +185,7 @@ jobs:
           conn = sqlite3.connect('data/news.db')
           n = conn.execute('DELETE FROM raw_news WHERE processed = 0').rowcount
           conn.commit()
-          print('已清理 %%d 条未处理 raw_news' %% n)
+          print('已清理 %d 条未处理 raw_news' % n)
           conn.close()
           "
 
