@@ -50,6 +50,21 @@ jobs:
           key: huggingface-models-${{ runner.os }}
           restore-keys: huggingface-models-
 
+      # ============================================================
+      # !! 临时清理步骤 - 清除积压的未处理 raw_news (1138条)
+      # !! 确认下次运行正常后，请删除此步骤 (含本注释块)
+      # ============================================================
+      - name: 清理积压的未处理数据
+        run: |
+          python -c "
+          import sqlite3
+          conn = sqlite3.connect('data/news.db')
+          n = conn.execute('DELETE FROM raw_news WHERE processed = 0').rowcount
+          conn.commit()
+          print('已清理 %%d 条未处理 raw_news' %% n)
+          conn.close()
+          "
+
       - name: 安装中文字体
         run: |
           sudo apt-get update -qq
@@ -158,6 +173,21 @@ jobs:
           path: ~/.cache/huggingface
           key: huggingface-models-${{ runner.os }}
           restore-keys: huggingface-models-
+
+      # ============================================================
+      # !! 临时清理步骤 - 清除积压的未处理 raw_news (1138条)
+      # !! 确认下次运行正常后，请删除此步骤 (含本注释块)
+      # ============================================================
+      - name: 清理积压的未处理数据
+        run: |
+          python -c "
+          import sqlite3
+          conn = sqlite3.connect('data/news.db')
+          n = conn.execute('DELETE FROM raw_news WHERE processed = 0').rowcount
+          conn.commit()
+          print('已清理 %%d 条未处理 raw_news' %% n)
+          conn.close()
+          "
 
       - name: 安装中文字体
         run: |
